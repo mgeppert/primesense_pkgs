@@ -8,9 +8,13 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h>
+
+#include <vector>
 
 #define POINTTYPE pcl::PointXYZRGB
 
+using std::vector;
 
 class PlaneSegmenter{
 
@@ -21,6 +25,8 @@ private:
 
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
     int minimalPointsPerPlane;
+
+    vector<uint32_t> colors;
 
 
     bool extractPlane(const pcl::PointCloud<POINTTYPE>::Ptr pc, pcl::ModelCoefficients::Ptr& coefficients, pcl::PointIndices::Ptr& inliers){
@@ -58,7 +64,12 @@ public:
         pub = nh.advertise<sensor_msgs::PointCloud2>("plane_segment/plane", 1);
         inputCloud = pcl::PointCloud<POINTTYPE>::Ptr (new pcl::PointCloud<POINTTYPE>());
 
-        minimalPointsPerPlane = 50;
+        minimalPointsPerPlane = 20000;
+
+        colors = vector<uint32_t>(3, 0);
+        colors[0] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
+        colors[1] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
+        colors[2] = ((uint32_t)0 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
     }
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
@@ -76,7 +87,14 @@ public:
         pcl::ModelCoefficients::Ptr coefficients;
         pcl::PointIndices::Ptr inliers;
 
-        if(extractPlane(inputCloud, coefficients, inliers)){
+        pcl::PointCloud<POINTTYPE> outputCloud(*inputCloud);
+
+        size_t colorIndex = 0;
+
+        pcl::ExtractIndices<POINTTYPE> extractor;
+        extractor.setKeepOrganized(true);
+
+        while(extractPlane(inputCloud, coefficients, inliers)){
 
             ROS_INFO("Model coefficients: %f, %f, %f, %f",
                      coefficients->values[0],
@@ -85,16 +103,21 @@ public:
                      coefficients->values[3]
                      );
 
-            uint32_t rgb = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
+            extractor.setIndices(inliers);
+            extractor.setNegative(true);
+            extractor.filterDirectly(inputCloud);
+
+            //uint32_t rgb = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
+            uint32_t rgb = colors[(colorIndex++) % 3];
             for(size_t i = 0; i < inliers->indices.size(); i++){
 
                 //color detected plane red
-                inputCloud->points[inliers->indices[i]].rgb = *reinterpret_cast<float*>(&rgb);
+                outputCloud.points[inliers->indices[i]].rgb = *reinterpret_cast<float*>(&rgb);
 
             }
         }
         sensor_msgs::PointCloud2 planeCloudMsg;
-        pcl::toROSMsg(*inputCloud, planeCloudMsg);
+        pcl::toROSMsg(outputCloud, planeCloudMsg);
         pub.publish(planeCloudMsg);
     }
 
