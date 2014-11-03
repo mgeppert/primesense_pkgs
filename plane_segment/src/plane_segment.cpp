@@ -9,6 +9,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/crop_box.h>
 
 #include <vector>
 
@@ -55,6 +56,22 @@ private:
         }
     }
 
+    pcl::PointCloud<POINTTYPE>::Ptr extractBox(pcl::PointCloud<POINTTYPE>::Ptr pc){
+
+        pcl::CropBox<POINTTYPE> cropBox;
+
+        cropBox.setMin(Eigen::Vector4f(-10.0, -10.0, 0.0, 1.0));
+        cropBox.setMax(Eigen::Vector4f(10.0, 10.0, 1.5, 1.0));
+        cropBox.setKeepOrganized(true);
+
+        cropBox.setInputCloud(pc);
+
+        pcl::PointCloud<POINTTYPE>::Ptr croppedCloud(new pcl::PointCloud<POINTTYPE>());
+        cropBox.filter(*croppedCloud);
+
+        return croppedCloud;
+    }
+
 public:
     PlaneSegmenter(){
 
@@ -84,10 +101,13 @@ public:
     }
 
     void segment(){
+
         pcl::ModelCoefficients::Ptr coefficients;
         pcl::PointIndices::Ptr inliers;
 
         pcl::PointCloud<POINTTYPE> outputCloud(*inputCloud);
+
+        inputCloud = extractBox(inputCloud);
 
         size_t colorIndex = 0;
 
