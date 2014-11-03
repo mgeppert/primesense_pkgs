@@ -7,9 +7,11 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/crop_box.h>
+#include <pcl/filters/approximate_voxel_grid.h>
 
 #include <vector>
 
@@ -35,15 +37,20 @@ private:
         coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
         inliers = pcl::PointIndices::Ptr(new pcl::PointIndices);
 
+        //downsample data
+        ROS_INFO("Points before downsampling: %lu", pc->points.size());
+        pcl::PointCloud<POINTTYPE>::Ptr dsCloud = downSample(pc);
+        ROS_INFO("Points after downsampling: %lu", dsCloud->points.size());
+
         // Create the segmentation object
         pcl::SACSegmentation<POINTTYPE> seg;
         seg.setOptimizeCoefficients (true);
 
         seg.setModelType (pcl::SACMODEL_PLANE);
         seg.setMethodType (pcl::SAC_RANSAC);
-        seg.setDistanceThreshold (0.005);
+        seg.setDistanceThreshold (0.01);
 
-        seg.setInputCloud (pc);
+        seg.setInputCloud (dsCloud);
         seg.segment (*inliers, *coefficients);
 
         if (inliers->indices.size () < minimalPointsPerPlane)
@@ -52,6 +59,17 @@ private:
             return false;
         }
         else{
+
+            //find all points of the original cloud that fit to the model
+
+            Eigen::VectorXf modelVec(4);
+            modelVec[0] = coefficients->values[0];
+            modelVec[1] = coefficients->values[1];
+            modelVec[2] = coefficients->values[2];
+            modelVec[3] = coefficients->values[3];
+
+            pcl::SampleConsensusModelPlane<POINTTYPE> scmp(pc);
+            scmp.selectWithinDistance(modelVec, 0.005, inliers->indices);
             return true;
         }
     }
@@ -72,6 +90,20 @@ private:
         return croppedCloud;
     }
 
+    //create a downsampled copy of the input cloud
+    pcl::PointCloud<POINTTYPE>::Ptr downSample(pcl::PointCloud<POINTTYPE>::Ptr pc){
+
+        pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+        grid.setLeafSize(0.005, 0.005, 0.005);
+
+        grid.setInputCloud(pc);
+
+        pcl::PointCloud<POINTTYPE>::Ptr filterOutput(new pcl::PointCloud<POINTTYPE>());
+        grid.filter(*filterOutput);
+
+        return filterOutput;
+    }
+
 public:
     PlaneSegmenter(){
 
@@ -81,12 +113,15 @@ public:
         pub = nh.advertise<sensor_msgs::PointCloud2>("plane_segment/plane", 1);
         inputCloud = pcl::PointCloud<POINTTYPE>::Ptr (new pcl::PointCloud<POINTTYPE>());
 
-        minimalPointsPerPlane = 20000;
+        minimalPointsPerPlane = 200;
 
-        colors = vector<uint32_t>(3, 0);
+        colors = vector<uint32_t>(6, 0);
         colors[0] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
         colors[1] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
         colors[2] = ((uint32_t)0 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
+        colors[3] = ((uint32_t)255 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
+        colors[4] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
+        colors[5] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)255);
     }
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
@@ -106,6 +141,7 @@ public:
         pcl::PointIndices::Ptr inliers;
 
         pcl::PointCloud<POINTTYPE> outputCloud(*inputCloud);
+        //pcl::PointCloud<POINTTYPE> originalCloud(*inputCloud);
 
         inputCloud = extractBox(inputCloud);
 
@@ -128,7 +164,8 @@ public:
             extractor.filterDirectly(inputCloud);
 
             //uint32_t rgb = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
-            uint32_t rgb = colors[(colorIndex++) % 3];
+            uint32_t rgb = colors[(colorIndex++) % colors.size()];
+            //uint32_t rgb = 0;
             for(size_t i = 0; i < inliers->indices.size(); i++){
 
                 //color detected plane red

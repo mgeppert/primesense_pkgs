@@ -32,3 +32,6 @@
 
 #temp files
 *~
+
+#autosave
+*.autosave
