@@ -9,10 +9,25 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   roscpp
   sensor_msgs
+  message_generation
 )
 
+add_message_files(
+	FILES
+	PlaneModel.msg
+	CloudPlanes.msg
+	)
 
-catkin_package()
+generate_messages(
+	DEPENDENCIES
+	sensor_msgs
+	)
+
+
+catkin_package(
+	CATKIN_DEPENDS
+	message_runtime
+	)
 
 ###########
 ## Build ##
