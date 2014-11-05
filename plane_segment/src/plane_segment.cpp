@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Time.h>
 #include <plane_segment/CloudPlanes.h>
 #include <plane_segment/PlaneModel.h>
 
@@ -10,7 +11,6 @@
 
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
-#include <pcl/sample_consensus/sac_model_plane.h>
 
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
@@ -21,11 +21,10 @@
 #include <pcl/filters/filter.h>
 
 #include <pcl/search/kdtree.h>
-//#include <pcl/kdtree/kdtree_flann.h>
 
 #include <vector>
 
-#define POINTTYPE pcl::PointXYZRGB
+#define POINTTYPE pcl::PointXYZ
 
 using std::vector;
 
@@ -38,20 +37,18 @@ private:
     ros::Publisher planePub;
 
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+
+    ros::Time timeStamp;
+
     int minimalPointsPerPlane;
 
     vector<uint32_t> colors;
 
-
+    //find the biggest plane in the pointcloud
     bool extractPlane(const pcl::PointCloud<POINTTYPE>::Ptr pc, pcl::ModelCoefficients::Ptr& coefficients, pcl::PointIndices::Ptr& inliers){
 
         coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients);
         inliers = pcl::PointIndices::Ptr(new pcl::PointIndices);
-
-        //downsample data
-        //ROS_INFO("Points before downsampling: %lu", pc->points.size());
-        //pcl::PointCloud<POINTTYPE>::Ptr dsCloud = downSample(pc);
-        //ROS_INFO("Points after downsampling: %lu", dsCloud->points.size());
 
         // Create the segmentation object
         pcl::SACSegmentation<POINTTYPE> seg;
@@ -74,6 +71,7 @@ private:
         }
     }
 
+    //cut out a box out of the pointcloud
     pcl::PointCloud<POINTTYPE>::Ptr extractBox(pcl::PointCloud<POINTTYPE>::Ptr pc){
 
         pcl::CropBox<POINTTYPE> cropBox;
@@ -94,7 +92,7 @@ private:
     pcl::PointCloud<POINTTYPE>::Ptr downSample(pcl::PointCloud<POINTTYPE>::Ptr pc){
 
         pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-        grid.setLeafSize(0.005, 0.005, 0.005);
+        grid.setLeafSize(0.01, 0.01, 0.01);
 
         grid.setInputCloud(pc);
 
@@ -113,16 +111,9 @@ public:
         debugPub = nh.advertise<sensor_msgs::PointCloud2>("plane_segment/debugOut", 1);
         planePub = nh.advertise<plane_segment::CloudPlanes>("plane_segment/planes", 1);
         inputCloud = pcl::PointCloud<POINTTYPE>::Ptr (new pcl::PointCloud<POINTTYPE>());
+        timeStamp = ros::Time();
 
-        minimalPointsPerPlane = 200;
-
-        colors = vector<uint32_t>(6, 0);
-        colors[0] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
-        colors[1] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
-        colors[2] = ((uint32_t)0 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
-        colors[3] = ((uint32_t)255 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
-        colors[4] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
-        colors[5] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)255);
+        minimalPointsPerPlane = 500;
     }
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
@@ -130,8 +121,8 @@ public:
         pcl::PointCloud<pcl::PointXYZRGB> tempCloud;
         pcl::fromROSMsg(*msg, tempCloud);
 
-        inputCloud = tempCloud.makeShared();
-//        pcl::fromROSMsg(*msg, *inputCloud);
+        timeStamp = msg->header.stamp;
+        pcl::fromROSMsg(*msg, *inputCloud);
 
         return;
     }
@@ -141,25 +132,19 @@ public:
         pcl::ModelCoefficients::Ptr coefficients;
         pcl::PointIndices::Ptr inliers;
 
-        pcl::PointCloud<POINTTYPE>::Ptr outputCloud = inputCloud->makeShared();
-        //pcl::PointCloud<POINTTYPE> originalCloud(*inputCloud);
-
         inputCloud = extractBox(inputCloud);
 
-        size_t colorIndex = 0;
-
         //downsample data
-        ROS_INFO("Points before downsampling: %lu", inputCloud->points.size());
+//        ROS_INFO("Points before downsampling: %lu", inputCloud->points.size());
         pcl::PointCloud<POINTTYPE>::Ptr dsCloud = downSample(inputCloud);
-        ROS_INFO("Points after downsampling: %lu", dsCloud->points.size());
+//        ROS_INFO("Points after downsampling: %lu", dsCloud->points.size());
 
         pcl::ExtractIndices<POINTTYPE> extractor;
         extractor.setKeepOrganized(true);
 
-        //std::vector<std::vector<float> > planeModels(0);
-
         //create Message to store data
         plane_segment::CloudPlanes planeCloudMsg;
+        planeCloudMsg.header.stamp = timeStamp;
 
         while(extractPlane(dsCloud, coefficients, inliers)){
 
@@ -169,8 +154,6 @@ public:
                      coefficients->values[2],
                      coefficients->values[3]
                      );
-
-            //planeModels.push_back(coefficients->values);
 
             plane_segment::PlaneModel planeModelMsg;
             planeModelMsg.xParam = coefficients->values[0];
@@ -183,31 +166,6 @@ public:
             extractor.setIndices(inliers);
             extractor.setNegative(true);
             extractor.filterDirectly(dsCloud);
-
-            //find all points of the original cloud that fit to the model
-
-            Eigen::VectorXf modelVec(4);
-            modelVec[0] = coefficients->values[0];
-            modelVec[1] = coefficients->values[1];
-            modelVec[2] = coefficients->values[2];
-            modelVec[3] = coefficients->values[3];
-
-            pcl::SampleConsensusModelPlane<POINTTYPE> scmp(outputCloud);
-            scmp.selectWithinDistance(modelVec, 0.01, inliers->indices);
-
-//            extractor.setIndices(inliers);
-//            extractor.setNegative(true);
-//            extractor.filterDirectly(outputCloud);
-
-            //uint32_t rgb = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
-            uint32_t rgb = colors[(colorIndex++) % colors.size()];
-            //uint32_t rgb = 0;
-            for(size_t i = 0; i < inliers->indices.size(); i++){
-
-                //color detected plane
-                outputCloud->points[inliers->indices[i]].rgb = *reinterpret_cast<float*>(&rgb);
-
-            }
         }
 
 //        //use kdtree to find connected components
@@ -252,9 +210,9 @@ public:
 ////            ROS_INFO("Points after extraction: %lu", inputCloud->points.size());
 //        }
 
-        sensor_msgs::PointCloud2 debugMsg;
-        pcl::toROSMsg(*outputCloud, debugMsg);
-        debugPub.publish(debugMsg);
+//        sensor_msgs::PointCloud2 debugMsg;
+//        pcl::toROSMsg(*outputCloud, debugMsg);
+//        debugPub.publish(debugMsg);
 
 
 //        std::vector<plane_segment::PlaneModel> planeMsgs(planeModels.size());
@@ -264,6 +222,7 @@ public:
 //        }
 
 //        planeCloudMsg.planes = planeMsgs;
+//        ROS_INFO("sending plane message with timestamp %d, %d", planeCloudMsg.header.stamp.sec, planeCloudMsg.header.stamp.nsec);
         planePub.publish(planeCloudMsg);
     }
 
