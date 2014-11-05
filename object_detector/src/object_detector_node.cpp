@@ -13,6 +13,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/filters/extract_indices.h>
 
 #include <vector>
 
@@ -46,12 +47,21 @@ private:
             pcl::SampleConsensusModelPlane<POINTTYPE> scmp(cloud);
             scmp.selectWithinDistance(planeModels[i], 0.02, planeIndices);
 
-            //TODO: remove points from cloud
+            pcl::PointIndices::Ptr plane;
+            plane->indices = planeIndices;
+
+            pcl::ExtractIndices<POINTTYPE> extractor;
+
+            extractor.setIndices(plane);
+            extractor.setNegative(true);
+            extractor.filterDirectly(cloud);
         }
 
-        sensor_msgs::PointCloud2 coloredCloudMsg;
-        pcl::toROSMsg(*cloud, coloredCloudMsg);
-        pub.publish(coloredCloudMsg);
+        //TODO: find connected components + compute centers
+
+//        sensor_msgs::PointCloud2 coloredCloudMsg;
+//        pcl::toROSMsg(*cloud, coloredCloudMsg);
+//        pub.publish(coloredCloudMsg);
 
     }
 
