@@ -4,6 +4,9 @@
 #include <plane_segment/CloudPlanes.h>
 #include <plane_segment/PlaneModel.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <plane_segment/CropBoxParamsConfig.h>
+
 //PCL
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
@@ -37,6 +40,8 @@ private:
     ros::Publisher planePub;
 
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+
+    pcl::CropBox<POINTTYPE> cropBox;
 
     ros::Time timeStamp;
 
@@ -74,12 +79,6 @@ private:
     //cut out a box out of the pointcloud
     pcl::PointCloud<POINTTYPE>::Ptr extractBox(pcl::PointCloud<POINTTYPE>::Ptr pc){
 
-        pcl::CropBox<POINTTYPE> cropBox;
-
-        cropBox.setMin(Eigen::Vector4f(-10.0, -10.0, 0.0, 1.0));
-        cropBox.setMax(Eigen::Vector4f(10.0, 10.0, 1.5, 1.0));
-        cropBox.setKeepOrganized(true);
-
         cropBox.setInputCloud(pc);
 
         pcl::PointCloud<POINTTYPE>::Ptr croppedCloud(new pcl::PointCloud<POINTTYPE>());
@@ -103,6 +102,7 @@ private:
     }
 
 public:
+
     PlaneSegmenter(){
 
         ros::NodeHandle nh;
@@ -113,7 +113,22 @@ public:
         inputCloud = pcl::PointCloud<POINTTYPE>::Ptr (new pcl::PointCloud<POINTTYPE>());
         timeStamp = ros::Time();
 
+        cropBox = pcl::CropBox<POINTTYPE>();
+        cropBox.setKeepOrganized(false);
+
+        cropBox.setMin(Eigen::Vector4f(-10.0, -10.0, 0.0, 1.0));
+        cropBox.setMax(Eigen::Vector4f(10.0, 10.0, 1.5, 1.0));
+
         minimalPointsPerPlane = 500;
+
+        return;
+    }
+
+    void updateData(Eigen::Vector4f& cropBoxMin, Eigen::Vector4f& cropBoxMax, int minimumPointsPerPlane){
+        cropBox.setMin(cropBoxMin);
+        cropBox.setMax(cropBoxMax);
+        minimalPointsPerPlane = minimumPointsPerPlane;
+        return;
     }
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
@@ -168,21 +183,58 @@ public:
             extractor.filterDirectly(dsCloud);
         }
         planePub.publish(planeCloudMsg);
+
+        return;
     }
 
 };
+
+Eigen::Vector4f cropBoxMin;
+Eigen::Vector4f cropBoxMax;
+int minimumPointsPerPlane;
+bool dataChanged;
+
+void paramCallback(plane_segment::CropBoxParamsConfig &config, uint32_t level) {
+    ROS_INFO("Reconfigure Cropbox: (%f %f %f), (%f, %f, %f)",
+             config.min_x,
+             config.min_y,
+             config.min_z,
+             config.max_x,
+             config.max_y,
+             config.max_z);
+    ROS_INFO("Minimum points per plane: %d", config.minPoints);
+
+    cropBoxMin = Eigen::Vector4f(config.min_x, config.min_y, config.min_z, 1.0);
+    cropBoxMax = Eigen::Vector4f(config.max_x, config.max_y, config.max_z, 1.0);
+    minimumPointsPerPlane = config.minPoints;
+
+    dataChanged = true;
+}
 
 int main(int argc, char **argv){
 
     ros::init(argc, argv, "plane_segment");
 
+    dynamic_reconfigure::Server<plane_segment::CropBoxParamsConfig> server;
+    dynamic_reconfigure::Server<plane_segment::CropBoxParamsConfig>::CallbackType f;
+
+    f = boost::bind(&paramCallback, _1, _2);
+    server.setCallback(f);
+
     PlaneSegmenter segmenter;
+
+    dataChanged = false;
 
     ros::Rate loop_rate(10);
 
     while(ros::ok()){
 
         ros::spinOnce();
+
+        if(dataChanged){
+            segmenter.updateData(cropBoxMin, cropBoxMax, minimumPointsPerPlane);
+            dataChanged = false;
+        }
 
         segmenter.segment();
 

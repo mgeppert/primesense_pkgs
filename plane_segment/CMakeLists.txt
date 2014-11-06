@@ -8,9 +8,15 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   roscpp
+  rospy
+  dynamic_reconfigure
   sensor_msgs
   message_generation
 )
+
+generate_dynamic_reconfigure_options(
+	cfg/CropBoxParams.cfg
+	)
 
 add_message_files(
 	FILES
@@ -49,7 +55,8 @@ add_executable(plane_segment_node src/plane_segment.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(plane_segment_node plane_segment_generate_messages_cpp)
+add_dependencies(plane_segment_node plane_segment_generate_messages_cpp)
+add_dependencies(plane_segment_node plane_segment_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(plane_segment_node
