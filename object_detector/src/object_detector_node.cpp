@@ -14,6 +14,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 #include <vector>
 
@@ -47,7 +49,7 @@ private:
             pcl::SampleConsensusModelPlane<POINTTYPE> scmp(cloud);
             scmp.selectWithinDistance(planeModels[i], 0.02, planeIndices);
 
-            pcl::PointIndices::Ptr plane;
+            pcl::PointIndices::Ptr plane(new pcl::PointIndices);
             plane->indices = planeIndices;
 
             pcl::ExtractIndices<POINTTYPE> extractor;
@@ -57,12 +59,35 @@ private:
             extractor.filterDirectly(cloud);
         }
 
-        //TODO: find connected components + compute centers
+    }
 
-//        sensor_msgs::PointCloud2 coloredCloudMsg;
-//        pcl::toROSMsg(*cloud, coloredCloudMsg);
-//        pub.publish(coloredCloudMsg);
+    std::vector<pcl::PointXYZ> findComponents(){
 
+        //TODO: compute centers
+
+        //use kdtree to find connected components
+
+        pcl::PointCloud<POINTTYPE>::Ptr sparseCloud(new pcl::PointCloud<POINTTYPE>);
+        std::vector<int> index;
+        pcl::removeNaNFromPointCloud(*cloud, *sparseCloud, index);
+        int minClusterSize = 500;
+        pcl::search::KdTree<POINTTYPE>::Ptr tree (new pcl::search::KdTree<POINTTYPE>);
+        tree->setInputCloud (sparseCloud);
+
+        std::vector<pcl::PointIndices> cluster_indices;
+
+        pcl::EuclideanClusterExtraction<POINTTYPE> ec;
+        ec.setClusterTolerance (0.02); // 2cm
+        ec.setMinClusterSize (minClusterSize);
+        ec.setMaxClusterSize (25000);
+        ec.setSearchMethod(tree);
+        ec.setInputCloud (sparseCloud);
+
+        ec.extract(cluster_indices);
+
+        ROS_INFO("Number of clusters: %lu", cluster_indices.size());
+
+        return std::vector<pcl::PointXYZ>();
     }
 
 public:
@@ -71,9 +96,11 @@ public:
         ros::NodeHandle nh;
 
         cloudSub = new Subscriber<PointCloud2>(nh, "/camera/depth_registered/points", 1);
+//        cloudSub->registerCallback(&ObjectDetector::cloudCallback, this);
         planeSub = new Subscriber<CloudPlanes>(nh, "/plane_segment/planes", 1);
+//        planeSub->registerCallback(&ObjectDetector::planeCallback, this);
 
-        synchronizer = new TimeSynchronizer<PointCloud2, CloudPlanes>(*cloudSub, *planeSub, 20);
+        synchronizer = new TimeSynchronizer<PointCloud2, CloudPlanes>(*cloudSub, *planeSub, 10);
         synchronizer->registerCallback(&ObjectDetector::cloudPlaneCallback, this);
 
         pub = nh.advertise<sensor_msgs::PointCloud2>("/plane_visualizer/cloud", 1);
@@ -87,7 +114,18 @@ public:
         delete synchronizer;
     }
 
+//    void cloudCallback(const PointCloud2::ConstPtr& cloudMsg){
+//        ROS_INFO("received cloud");
+//    }
+
+
+//    void planeCallback(const plane_segment::CloudPlanes::ConstPtr& planeMsg){
+//        ROS_INFO("received planes");
+//    }
+
     void cloudPlaneCallback(const PointCloud2::ConstPtr& cloudMsg, const CloudPlanes::ConstPtr& planeMsg){
+
+        ROS_INFO("received new cloud");
 
         pcl::fromROSMsg(*cloudMsg, *cloud);
 
@@ -106,6 +144,10 @@ public:
     void detectObjects(){
 
         //TODO: remove planes + compute centers of remaining (connected) surfaces;
+
+        removePlanes();
+
+        std::vector<pcl::PointXYZ> objects = findComponents();
     }
 };
 } //namespace ObjectDetector
