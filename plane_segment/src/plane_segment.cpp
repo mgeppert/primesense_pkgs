@@ -128,6 +128,10 @@ public:
         cropBox.setMin(cropBoxMin);
         cropBox.setMax(cropBoxMax);
         minimalPointsPerPlane = minimumPointsPerPlane;
+
+        ros::param::set("/plane_segment/min_x", cropBoxMin[0]);
+        ros::param::set("/plane_segment/min_y", cropBoxMin[1]);
+        ros::param::set("/plane_segment/min_z", cropBoxMin[2]);
         return;
     }
 

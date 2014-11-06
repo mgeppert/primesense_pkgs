@@ -13,6 +13,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/filters/crop_box.h>
 
 #include <vector>
 
@@ -36,6 +37,64 @@ private:
     pcl::PointCloud<POINTTYPE>::Ptr cloud;
 
     std::vector<Eigen::VectorXf> planeModels;
+
+    //cut out a box out of the pointcloud
+    pcl::PointCloud<POINTTYPE>::Ptr cropCloud(pcl::PointCloud<POINTTYPE>::Ptr pc){
+
+        pcl::CropBox<POINTTYPE> cropBox;
+
+        double x, y, z;
+        x = y = z = -100.0;
+        ros::param::getCached("/plane_segment/min_x", x);
+        ros::param::getCached("/plane_segment/min_y", y);
+        ros::param::getCached("/plane_segment/min_z", z);
+
+        cropBox.setMin(Eigen::Vector4f(x, y, z, 1.0));
+
+        x = y = z = 100.0;
+        ros::param::getCached("/plane_segment/max_x", x);
+        ros::param::getCached("/plane_segment/max_y", y);
+        ros::param::getCached("/plane_segment/max_z", z);
+
+        cropBox.setMax(Eigen::Vector4f(x, y, z, 1.0));
+
+        cropBox.setInputCloud(pc);
+
+        pcl::PointCloud<POINTTYPE>::Ptr croppedCloud(new pcl::PointCloud<POINTTYPE>());
+        cropBox.filter(*croppedCloud);
+
+        return croppedCloud;
+    }
+
+    pcl::PointCloud<POINTTYPE>::Ptr colorPlanes(pcl::PointCloud<POINTTYPE>::Ptr colorCloud){
+
+        std::vector<uint32_t> colors(6, 0);
+        colors[0] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
+        colors[1] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
+        colors[2] = ((uint32_t)0 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
+        colors[3] = ((uint32_t)255 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
+        colors[4] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
+        colors[5] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)255);
+
+        size_t colorIndex = 0;
+
+        for(size_t i = 0; i < planeModels.size(); i++){
+
+            std::vector<int> planeIndices;
+
+            pcl::SampleConsensusModelPlane<POINTTYPE> scmp(colorCloud);
+            scmp.selectWithinDistance(planeModels[i], 0.02, planeIndices);
+
+            uint32_t rgb = colors[(colorIndex++) % colors.size()];
+
+            //color detected plane
+            for(size_t j = 0; j < planeIndices.size(); j++){
+                colorCloud->points[planeIndices[j]].rgb = *reinterpret_cast<float*>(&rgb);
+            }
+        }
+
+        return colorCloud;
+    }
 
 public:
     PlaneVisualizer(){
@@ -75,37 +134,14 @@ public:
         }
     }
 
-    void colorPlanes(){
+    void showPlanes(){
 
-        std::vector<uint32_t> colors(6, 0);
-        colors[0] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)0);
-        colors[1] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
-        colors[2] = ((uint32_t)0 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
-        colors[3] = ((uint32_t)255 << 16 | (uint32_t)255 << 8 | (uint32_t)0);
-        colors[4] = ((uint32_t)255 << 16 | (uint32_t)0 << 8 | (uint32_t)255);
-        colors[5] = ((uint32_t)0 << 16 | (uint32_t)255 << 8 | (uint32_t)255);
-
-        size_t colorIndex = 0;
-
-        for(size_t i = 0; i < planeModels.size(); i++){
-
-            std::vector<int> planeIndices;
-
-            pcl::SampleConsensusModelPlane<POINTTYPE> scmp(cloud);
-            scmp.selectWithinDistance(planeModels[i], 0.02, planeIndices);
-
-            uint32_t rgb = colors[(colorIndex++) % colors.size()];
-
-            //color detected plane
-            for(size_t j = 0; j < planeIndices.size(); j++){
-                cloud->points[planeIndices[j]].rgb = *reinterpret_cast<float*>(&rgb);
-            }
-        }
+        cloud = cropCloud(cloud);
+        cloud = colorPlanes(cloud);
 
         sensor_msgs::PointCloud2 coloredCloudMsg;
         pcl::toROSMsg(*cloud, coloredCloudMsg);
         pub.publish(coloredCloudMsg);
-
     }
 };
 } //namespace PlaneVisualizer
@@ -122,7 +158,7 @@ int main(int argc, char **argv){
 
         ros::spinOnce();
 
-        visualizer.colorPlanes();
+        visualizer.showPlanes();
 
         loop_rate.sleep();
     }
