@@ -167,62 +167,6 @@ public:
             extractor.setNegative(true);
             extractor.filterDirectly(dsCloud);
         }
-
-//        //use kdtree to find connected components
-
-//        pcl::PointCloud<POINTTYPE>::Ptr sparseCloud(new pcl::PointCloud<POINTTYPE>);
-//        pcl::removeNaNFromPointCloud(*outputCloud, *sparseCloud, std::vector<int>());
-//        int minClusterSize = 50;
-//        pcl::search::KdTree<POINTTYPE>::Ptr tree (new pcl::search::KdTree<POINTTYPE>);
-//        tree->setInputCloud (sparseCloud);
-
-//        std::vector<pcl::PointIndices> cluster_indices;
-
-//        pcl::EuclideanClusterExtraction<POINTTYPE> ec;
-//        ec.setClusterTolerance (0.02); // 2cm
-//        ec.setMinClusterSize (minClusterSize);
-//        ec.setMaxClusterSize (25000);
-//        ec.setSearchMethod(tree);
-//        ec.setInputCloud (sparseCloud);
-
-//        ec.extract(cluster_indices);
-
-//        ROS_INFO("Number of clusters: %lu", cluster_indices.size());
-
-//        std::vector<double> clusterMean(3, 0.0);
-
-//        for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it){
-//            for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++){
-//                clusterMean[0] += sparseCloud->points[*pit].x;
-//                clusterMean[1] += sparseCloud->points[*pit].y;
-//                clusterMean[2] += sparseCloud->points[*pit].z;
-//            }
-
-//            ROS_INFO("Cluster mean: %f, %f, %f", clusterMean[0] / cluster_indices.size(), clusterMean[1] / cluster_indices.size(), clusterMean[2] / cluster_indices.size());
-
-////            ROS_INFO("Points before extraction: %lu", inputCloud->points.size());
-////            pcl::ExtractIndices<POINTTYPE> extractor;
-////            extractor.setNegative(true);
-////            //pcl::PointIndices::Ptr inds;
-////            //inds->indices = cluster_indices;
-////            extractor.setIndices(it);
-////            extractor.filterDirectly(inputCloud);
-////            ROS_INFO("Points after extraction: %lu", inputCloud->points.size());
-//        }
-
-//        sensor_msgs::PointCloud2 debugMsg;
-//        pcl::toROSMsg(*outputCloud, debugMsg);
-//        debugPub.publish(debugMsg);
-
-
-//        std::vector<plane_segment::PlaneModel> planeMsgs(planeModels.size());
-
-//        for(size_t i = 0; i < planeModels.size(); i++){
-//            planeMsgs[i].planeCoefficients = planeModels[i];
-//        }
-
-//        planeCloudMsg.planes = planeMsgs;
-//        ROS_INFO("sending plane message with timestamp %d, %d", planeCloudMsg.header.stamp.sec, planeCloudMsg.header.stamp.nsec);
         planePub.publish(planeCloudMsg);
     }
 
