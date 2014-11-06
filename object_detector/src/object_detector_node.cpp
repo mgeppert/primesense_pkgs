@@ -16,6 +16,7 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/common/centroid.h>
 
 #include <vector>
 
@@ -87,6 +88,34 @@ private:
 
         ROS_INFO("Number of clusters: %lu", cluster_indices.size());
 
+        for(size_t i = 0; i < cluster_indices.size(); i++){
+
+//            pcl::PointCloud<POINTTYPE> cluster;
+
+////            pcl::PointIndices::Ptr clusterIndices(new pcl::PointIndices);
+////            clusterIndices->indices = cluster_indices[i];
+
+//            pcl::ExtractIndices<POINTTYPE> extractor;
+
+//            pcl::PointIndicesConstPtr indicesPtr(cluster_indices[i]);
+
+//            extractor.setIndices(indicesPtr);
+//            extractor.setNegative(false);
+//            extractor.setInputCloud(sparseCloud);
+//            extractor.filter(cluster);
+
+            std::vector<double> clusterMean(3, 0);
+            for (std::vector<int>::const_iterator pit = cluster_indices[i].indices.begin (); pit != cluster_indices[i].indices.end (); pit++){
+                clusterMean[0] += sparseCloud->points[*pit].x;
+                clusterMean[1] += sparseCloud->points[*pit].y;
+                clusterMean[2] += sparseCloud->points[*pit].z;
+            }
+
+            ROS_INFO("Cluster mean: %f, %f, %f", clusterMean[0] / cluster_indices.size(), clusterMean[1] / cluster_indices.size(), clusterMean[2] / cluster_indices.size());
+
+
+        }
+
         return std::vector<pcl::PointXYZ>();
     }
 
@@ -96,11 +125,11 @@ public:
         ros::NodeHandle nh;
 
         cloudSub = new Subscriber<PointCloud2>(nh, "/camera/depth_registered/points", 1);
-//        cloudSub->registerCallback(&ObjectDetector::cloudCallback, this);
+        cloudSub->registerCallback(&ObjectDetector::cloudCallback, this);
         planeSub = new Subscriber<CloudPlanes>(nh, "/plane_segment/planes", 1);
-//        planeSub->registerCallback(&ObjectDetector::planeCallback, this);
+        planeSub->registerCallback(&ObjectDetector::planeCallback, this);
 
-        synchronizer = new TimeSynchronizer<PointCloud2, CloudPlanes>(*cloudSub, *planeSub, 10);
+        synchronizer = new TimeSynchronizer<PointCloud2, CloudPlanes>(*cloudSub, *planeSub, 20);
         synchronizer->registerCallback(&ObjectDetector::cloudPlaneCallback, this);
 
         pub = nh.advertise<sensor_msgs::PointCloud2>("/plane_visualizer/cloud", 1);
@@ -114,18 +143,23 @@ public:
         delete synchronizer;
     }
 
-//    void cloudCallback(const PointCloud2::ConstPtr& cloudMsg){
+    void cloudCallback(const PointCloud2::ConstPtr& cloudMsg){
 //        ROS_INFO("received cloud");
-//    }
+    }
 
 
-//    void planeCallback(const plane_segment::CloudPlanes::ConstPtr& planeMsg){
+    void planeCallback(const plane_segment::CloudPlanes::ConstPtr& planeMsg){
 //        ROS_INFO("received planes");
-//    }
+    }
 
     void cloudPlaneCallback(const PointCloud2::ConstPtr& cloudMsg, const CloudPlanes::ConstPtr& planeMsg){
 
         ROS_INFO("received new cloud");
+
+        if(!ros::ok()){
+            ROS_INFO("ABORTING CALLBACK");
+            return;
+        }
 
         pcl::fromROSMsg(*cloudMsg, *cloud);
 
