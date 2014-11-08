@@ -137,8 +137,8 @@ public:
 
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
 
-        pcl::PointCloud<pcl::PointXYZRGB> tempCloud;
-        pcl::fromROSMsg(*msg, tempCloud);
+//        pcl::PointCloud<pcl::PointXYZRGB> tempCloud;
+//        pcl::fromROSMsg(*msg, tempCloud);
 
         timeStamp = msg->header.stamp;
         pcl::fromROSMsg(*msg, *inputCloud);
