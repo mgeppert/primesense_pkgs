@@ -36,7 +36,7 @@ class PlaneSegmenter{
 private:
 
     ros::Subscriber sub;
-    ros::Publisher debugPub;
+//    ros::Publisher debugPub;
     ros::Publisher planePub;
 
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
@@ -107,8 +107,8 @@ public:
 
         ros::NodeHandle nh;
 
-        sub = nh.subscribe("/camera/depth_registered/points", 1, &PlaneSegmenter::pointCloudCallback, this);
-        debugPub = nh.advertise<sensor_msgs::PointCloud2>("plane_segment/debugOut", 1);
+        sub = nh.subscribe("/cloud_preparation/prepared_cloud", 1, &PlaneSegmenter::pointCloudCallback, this);
+//        debugPub = nh.advertise<sensor_msgs::PointCloud2>("plane_segment/debugOut", 1);
         planePub = nh.advertise<plane_segment::CloudPlanes>("plane_segment/planes", 1);
         inputCloud = pcl::PointCloud<POINTTYPE>::Ptr (new pcl::PointCloud<POINTTYPE>());
         timeStamp = ros::Time();

@@ -101,7 +101,7 @@ public:
 
         ros::NodeHandle nh;
 
-        cloudSub = new Subscriber<PointCloud2>(nh, "/camera/depth_registered/points", 1);
+        cloudSub = new Subscriber<PointCloud2>(nh, "/cloud_preparation/prepared_cloud", 1);
         planeSub = new Subscriber<CloudPlanes>(nh, "/plane_segment/planes", 1);
 
         synchronizer = new TimeSynchronizer<PointCloud2, CloudPlanes>(*cloudSub, *planeSub, 20);
