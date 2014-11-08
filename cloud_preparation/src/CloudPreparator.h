@@ -1,5 +1,5 @@
-#ifndef CLOUD_PREPARATION_NODE_H
-#define CLOUD_PREPARATION_NODE_H
+#ifndef CLOUD_PREPARATOR_NODE_H
+#define CLOUD_PREPARATOR_NODE_H
 
 #include <ros/ros.h>
 
@@ -35,4 +35,4 @@ private:
 
 }
 
-#endif // CLOUD_PREPARATION_NODE_H
+#endif // CLOUD_PREPARATOR_H

@@ -1,6 +1,6 @@
 #include "CloudPreparator.h"
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
 
 #include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -47,10 +47,12 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(PointCloud<POINTTYPE>
     // The same rotation matrix as before; tetha radians arround X axis
 //    transform.rotate (Eigen::AngleAxisf ( PI / 4.0, Eigen::Vector3f::UnitX()));
 
-    float theta = M_PI/4;
+//    float theta = M_PI/4;
+    double theta_x = 0.0;
+    ros::param::getCached("/calibration/x_angle", theta_x);
 
     // rotate tetha radians arround X axis
-      transform.rotate (Eigen::AngleAxisf (theta, Eigen::Vector3f::UnitX()));
+      transform.rotate (Eigen::AngleAxisf (theta_x, Eigen::Vector3f::UnitX()));
 
     // Executing the transformation
     pcl::PointCloud<POINTTYPE>::Ptr transformed_cloud (new pcl::PointCloud<POINTTYPE>());
