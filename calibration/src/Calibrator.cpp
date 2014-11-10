@@ -40,7 +40,8 @@ bool Calibrator::calibrate(){
 
     int numVals = 0;
     int numIt = 0;
-    std::vector<double> averageVals(4, 0.0);
+    std::vector<double> averageAngles(3, 0.0);
+    double averageHeight = 0.0;
 
     ros::Rate loop_rate(20);
 
@@ -60,9 +61,14 @@ bool Calibrator::calibrate(){
 
         ROS_INFO("extracted coefficients: %f, %f, %f, %f", coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]);
 
-        for(size_t i = 0; i < 4; i++){
-            averageVals[i] += coefficients->values[i];
+        std::vector<double> angles = computeAngles(coefficients->values);
+
+        for(size_t i = 0; i < 3; i++){
+
+            averageAngles[i] += angles[i];
         }
+
+        averageHeight += -coefficients->values[1]*coefficients->values[3];
 
         numVals++;
 
@@ -74,19 +80,16 @@ bool Calibrator::calibrate(){
         return false;
     }
 
-    for(size_t i = 0; i < 4; i++){
-        averageVals[i] /= requiredClouds;
+    for(size_t i = 0; i < 3; i++){
+        averageAngles[i] /= requiredClouds;
     }
+    averageHeight /= requiredClouds;
 
-    ROS_INFO("average vals: %f, %f, %f, %f", averageVals[0], averageVals[1], averageVals[2], averageVals[3]);
+    ROS_INFO("average angles: %f, %f, %f, %f", averageAngles[0], averageAngles[1], averageAngles[2], averageAngles[3]);
 
-    std::vector<double> angles = computeAngles(averageVals);
+    ROS_INFO("average height: %f", averageHeight);
 
-    double height = -averageVals[1]*averageVals[3];
-
-    ROS_INFO("angles: %f, %f, %f; height: %f", angles[0], angles[1], angles[2], height);
-
-    saveCalibration(angles, height);
+    saveCalibration(averageAngles, averageHeight);
 
     return true;
 }
@@ -137,7 +140,7 @@ pcl::ModelCoefficients::Ptr Calibrator::findGroundPlane(PointCloud<POINTTYPE>::P
     return coefficients;
 }
 
-std::vector<double> Calibrator::computeAngles(std::vector<double> groundPlaneCoefficients){
+std::vector<double> Calibrator::computeAngles(std::vector<float> groundPlaneCoefficients){
 
     std::vector<double> angles(3);
 
