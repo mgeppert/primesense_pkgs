@@ -1,12 +1,16 @@
 #ifndef PRIMESENSE_PKGS_OBJECT_FINDER_H
 #define PRIMESENSE_PKGS_OBJECT_FINDER_H
 
-//#include <ros/ros.h>
+#include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+//#include <std_msgs/Time.h>
 
 //PCL
 #include <pcl/filters/crop_box.h>
 #include <pcl/octree/octree.h>
+//#include <pcl/octree/octree_pointcloud_changedetector.h>
+
+#include <vector>
 
 #define POINTTYPE pcl::PointXYZRGB
 
@@ -22,15 +26,24 @@ public:
     void findObjects();
 
 private:
+    ros::Subscriber sub;
+    ros::Publisher objectsPub;
+    ros::Publisher upperProjectionPub;
+    ros::Publisher lowerProjectionPub;
+    ros::Publisher differencesPub;
+
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+    ros::Time currentCloudTimeStamp;
 
     pcl::CropBox<POINTTYPE> lowerBox;
     pcl::CropBox<POINTTYPE> upperBox;
-    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE>::Ptr octree;
+//    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE> octree;
 
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
-    pcl::PointCloud<POINTTYPE>::Ptr getDifferences(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
+    pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
+    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
+    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
     //TODO extract objects
 };
 }//namespace primesense_pkgs
