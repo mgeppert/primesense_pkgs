@@ -30,7 +30,8 @@ private:
     ros::Subscriber sub;
     ros::Publisher pub;
 
-    PointCloud<POINTTYPE>::Ptr adaptViewPoint(PointCloud<POINTTYPE>::Ptr cloud);
+    PointCloud<POINTTYPE>::Ptr adaptViewPoint(const PointCloud<POINTTYPE>::Ptr& cloud);
+    PointCloud<POINTTYPE>::Ptr removeGroundPlane(const PointCloud<POINTTYPE>::Ptr& cloud);
 };
 
 }
