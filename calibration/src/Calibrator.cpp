@@ -36,13 +36,15 @@ bool Calibrator::calibrate(){
 
 //    ROS_INFO("extracted coefficients: %f, %f, %f, %f", coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]);
 
+    int requiredClouds = 100;
+
     int numVals = 0;
     int numIt = 0;
     std::vector<double> averageVals(4, 0.0);
 
     ros::Rate loop_rate(20);
 
-    while(numVals < 50 && numIt < 1000 && ros::ok()){
+    while(numVals < requiredClouds && numIt < 1000 && ros::ok()){
 
         ros::spinOnce();
 
@@ -52,6 +54,7 @@ bool Calibrator::calibrate(){
         pcl::ModelCoefficients::Ptr coefficients = findGroundPlane(croppedCloud);
 
         if(coefficients->values.size() == 0){
+            loop_rate.sleep();
             continue;
         }
 
@@ -66,29 +69,31 @@ bool Calibrator::calibrate(){
         loop_rate.sleep();
     }
 
-    if(numVals < 50){
+    if(numVals < requiredClouds){
         //aborted, not enough planes found
         return false;
     }
 
     for(size_t i = 0; i < 4; i++){
-        averageVals[i] /= 50.0;
+        averageVals[i] /= requiredClouds;
     }
 
     ROS_INFO("average vals: %f, %f, %f, %f", averageVals[0], averageVals[1], averageVals[2], averageVals[3]);
 
     std::vector<double> angles = computeAngles(averageVals);
 
-    ROS_INFO("angles: %f, %f, %f", angles[0], angles[1], angles[2]);
+    double height = -averageVals[1]*averageVals[3];
 
-    saveCalibration(angles);
+    ROS_INFO("angles: %f, %f, %f; height: %f", angles[0], angles[1], angles[2], height);
+
+    saveCalibration(angles, height);
 
     return true;
 }
 
 void Calibrator::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
 
-//    ROS_INFO("received cloud");
+    ROS_INFO("received cloud");
 
     pcl::fromROSMsg(*msg, *cloud);
 
@@ -145,11 +150,12 @@ std::vector<double> Calibrator::computeAngles(std::vector<double> groundPlaneCoe
     return angles;
 }
 
-void Calibrator::saveCalibration(std::vector<double> angles){
+void Calibrator::saveCalibration(std::vector<double> angles, double height){
 
     ros::param::set("/calibration/x_angle", angles[0]);
     ros::param::set("/calibration/y_angle", angles[1]);
     ros::param::set("/calibration/z_angle", angles[2]);
+    ros::param::set("/calibration/height", height);
 
     return;
 }

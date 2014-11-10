@@ -33,7 +33,7 @@ private:
     PointCloud<POINTTYPE>::Ptr cropBox(PointCloud<POINTTYPE>::Ptr pc);
     pcl::ModelCoefficients::Ptr findGroundPlane(PointCloud<POINTTYPE>::Ptr pc);
     std::vector<double> computeAngles(std::vector<double> groundPlaneCoefficients);
-    void saveCalibration(std::vector<double> angles);
+    void saveCalibration(std::vector<double> angles, double height);
 
 };
 } //namespace primesense_pkgs
