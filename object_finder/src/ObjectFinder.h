@@ -7,7 +7,7 @@
 
 //PCL
 #include <pcl/filters/crop_box.h>
-#include <pcl/octree/octree.h>
+//#include <pcl/octree/octree.h>
 //#include <pcl/octree/octree_pointcloud_changedetector.h>
 
 #include <vector>
@@ -31,6 +31,7 @@ private:
     ros::Publisher upperProjectionPub;
     ros::Publisher lowerProjectionPub;
     ros::Publisher differencesPub;
+    ros::Publisher markerPub;
 
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
     ros::Time currentCloudTimeStamp;
@@ -41,10 +42,12 @@ private:
 
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+//    pcl::PointCloud<POINTTYPE>::Ptr removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
-    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
-    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
-    //TODO extract objects
+//    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
+    pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
+//    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
+    std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
 };
 }//namespace primesense_pkgs
 
