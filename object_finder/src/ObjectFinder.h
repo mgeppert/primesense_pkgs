@@ -48,6 +48,7 @@ private:
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
 //    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
     std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+    void sendMarker(pcl::PointXYZ point, int id);
 };
 }//namespace primesense_pkgs
 

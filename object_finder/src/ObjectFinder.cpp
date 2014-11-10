@@ -83,49 +83,20 @@ void ObjectFinder::findObjects(){
 
     std::vector<pcl::PointXYZ> positions = getObjectPositions(differenceCloud);
 
-    if(positions.size() > 0){
-        visualization_msgs::Marker marker;
-        marker.header.frame_id = "camera_depth_optical_frame";
-        marker.header.stamp = currentCloudTimeStamp;
-        marker.ns = "basic_shapes";
-        marker.id = 0;
-        marker.type = visualization_msgs::Marker::SPHERE;
-        marker.action = visualization_msgs::Marker::ADD;
-        marker.pose.position.x = positions[0].x;
-        marker.pose.position.y = positions[0].y;
-        marker.pose.position.z = positions[0].z;
-        marker.pose.orientation.x = 0.0;
-        marker.pose.orientation.y = 0.0;
-        marker.pose.orientation.z = 0.0;
-        marker.pose.orientation.w = 1.0;
-
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.05;
-        marker.scale.z = 0.05;
-
-        // Set the color -- be sure to set alpha to something non-zero!
-        marker.color.r = 0.0f;
-        marker.color.g = 1.0f;
-        marker.color.b = 0.0f;
-        marker.color.a = 1.0;
-
-        marker.lifetime = ros::Duration();
-
-        markerPub.publish(marker);
-    }
-
     object_finder::Objects objects;
     objects.header = std_msgs::Header();
     objects.header.stamp = currentCloudTimeStamp;
 
-    for(std::vector<pcl::PointXYZ>::const_iterator it = positions.begin(), end = positions.end(); it != end; it++){
+    for(size_t i = 0; i < positions.size(); i++){
         geometry_msgs::Point point;
-        point.x = it->x;
-        point.y = it->y;
-        point.z = it->z;
+        point.x = positions[i].x;
+        point.y = positions[i].y;
+        point.z = positions[i].z;
 
         objects.object_positions.push_back(point);
         objects.object_radiuses.push_back(0.02);
+
+        sendMarker(positions[i], i);
     }
 
     objectsPub.publish(objects);
@@ -237,7 +208,7 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
     ec.setClusterTolerance (0.02); // 2cm
     ec.setMinClusterSize (20);
-    ec.setMaxClusterSize (200);
+    ec.setMaxClusterSize (2000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
     ec.extract(cluster_indices);
@@ -261,6 +232,38 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     }
 
     return objectPositions;
+}
+
+void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "camera_depth_optical_frame";
+    marker.header.stamp = currentCloudTimeStamp;
+    marker.ns = "basic_shapes";
+    marker.id = id;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = point.x;
+    marker.pose.position.y = point.y;
+    marker.pose.position.z = point.z;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+
+    marker.scale.x = 0.05;
+    marker.scale.y = 0.05;
+    marker.scale.z = 0.05;
+
+    // Set the color -- be sure to set alpha to something non-zero!
+    marker.color.r = 0.0f;
+    marker.color.g = 1.0f;
+    marker.color.b = 0.0f;
+    marker.color.a = 1.0;
+
+    marker.lifetime = ros::Duration();
+
+    markerPub.publish(marker);
 }
 
 } //namespace primesense_pkgs
