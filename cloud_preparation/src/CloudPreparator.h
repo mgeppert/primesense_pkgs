@@ -33,6 +33,8 @@ private:
     PointCloud<POINTTYPE>::Ptr adaptViewPoint(const PointCloud<POINTTYPE>::Ptr& cloud);
     PointCloud<POINTTYPE>::Ptr removeGroundPlane(const PointCloud<POINTTYPE>::Ptr& cloud);
     PointCloud<POINTTYPE>::Ptr cropBox(const PointCloud<POINTTYPE>::Ptr& cloud);
+    PointCloud<POINTTYPE>::Ptr removeOutliers(const PointCloud<POINTTYPE>::Ptr& cloud);
+
 };
 
 }

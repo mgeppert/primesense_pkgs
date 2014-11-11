@@ -7,6 +7,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/crop_box.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 namespace primesense_pkgs{
 
@@ -34,10 +35,11 @@ void CloudPreparator::prepareCloud(){
 
     PointCloud<POINTTYPE>::Ptr rotatedCloud = adaptViewPoint(cloud);
     PointCloud<POINTTYPE>::Ptr croppedCloud = cropBox(rotatedCloud);
+    PointCloud<POINTTYPE>::Ptr filteredCloud = removeOutliers(croppedCloud);
 //    PointCloud<POINTTYPE>::Ptr noGroundCloud = removeGroundPlane(rotatedCloud);
 
     sensor_msgs::PointCloud2 preparedCloudMsg;
-    pcl::toROSMsg(*croppedCloud, preparedCloudMsg);
+    pcl::toROSMsg(*filteredCloud, preparedCloudMsg);
     pub.publish(preparedCloudMsg);
 
 }
@@ -157,5 +159,17 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>:
 
 //    return croppedCloud;
 }
+
+PointCloud<POINTTYPE>::Ptr CloudPreparator::removeOutliers(const PointCloud<POINTTYPE>::Ptr& cloud){
+    pcl::StatisticalOutlierRemoval<POINTTYPE> sor;
+    sor.setInputCloud (cloud);
+    sor.setMeanK (50);
+    sor.setStddevMulThresh (1.0);
+
+    PointCloud<POINTTYPE>::Ptr filteredCloud(new PointCloud<POINTTYPE>);
+    sor.filter (*filteredCloud);
+    return filteredCloud;
+}
+
 
 }//namespace primesense_pkgs
