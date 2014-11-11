@@ -6,6 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/crop_box.h>
 
 namespace primesense_pkgs{
 
@@ -32,10 +33,11 @@ void CloudPreparator::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& ms
 void CloudPreparator::prepareCloud(){
 
     PointCloud<POINTTYPE>::Ptr rotatedCloud = adaptViewPoint(cloud);
+    PointCloud<POINTTYPE>::Ptr croppedCloud = cropBox(rotatedCloud);
 //    PointCloud<POINTTYPE>::Ptr noGroundCloud = removeGroundPlane(rotatedCloud);
 
     sensor_msgs::PointCloud2 preparedCloudMsg;
-    pcl::toROSMsg(*rotatedCloud, preparedCloudMsg);
+    pcl::toROSMsg(*croppedCloud, preparedCloudMsg);
     pub.publish(preparedCloudMsg);
 
 }
@@ -112,6 +114,48 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::removeGroundPlane(const PointCloud<P
     ROS_INFO("points after removing plane: %lu", newCloud->points.size());
 
     return newCloud;
+}
+
+PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>::Ptr &cloud){
+
+    pcl::CropBox<POINTTYPE> cb;
+    cb.setMin(Eigen::Vector4f(-0.5, -0.1, 0.3, 1.0));
+    cb.setMax(Eigen::Vector4f(0.5, 0.25, 1.5, 1.0));
+
+//    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity()
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+    transform(0,2) = -1.0d/3.0d;
+    transform(0,3) = 0.5;
+    cb.setTransform(transform);
+
+    cb.setInputCloud(cloud);
+
+    PointCloud<POINTTYPE>::Ptr croppedCloud(new PointCloud<POINTTYPE>);
+    cb.filter(*croppedCloud);
+    return croppedCloud;
+
+//    double height = 0.0;
+//    ros::param::getCached("/calibration/height", height);
+//    ROS_INFO("height: %f", height);
+
+//    double theta_x = 0.0;
+//    double theta_y = 0.0;
+//    double theta_z = 0.0;
+//    ros::param::getCached("/calibration/x_angle", theta_x);
+//    ros::param::getCached("/calibration/y_angle", theta_y);
+//    ros::param::getCached("/calibration/z_angle", theta_z);
+
+//    pcl::CropBox<POINTTYPE> cb;
+//    cb.setMin(Eigen::Vector4f(-0.5, -0.1, 0.4, 1.0));
+//    cb.setMax(Eigen::Vector4f(0.5, 0.25, 1.5, 1.0));
+//    cb.setRotation(Eigen::Vector3f(theta_x, 0.0, M_PI));
+//    cb.setTranslation(Eigen::Vector3f(0.0, 0.1, 0.0));
+//    cb.setInputCloud(cloud);
+
+//    PointCloud<POINTTYPE>::Ptr croppedCloud(new PointCloud<POINTTYPE>);
+//    cb.filter(*croppedCloud);
+
+//    return croppedCloud;
 }
 
 }//namespace primesense_pkgs
