@@ -121,14 +121,8 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::removeGroundPlane(const PointCloud<P
 PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>::Ptr &cloud){
 
     pcl::CropBox<POINTTYPE> cb;
-    cb.setMin(Eigen::Vector4f(-0.5, -0.1, 0.3, 1.0));
-    cb.setMax(Eigen::Vector4f(0.5, 0.25, 1.5, 1.0));
-
-//    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity()
-    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-    transform(0,2) = -1.0d/3.0d;
-    transform(0,3) = 0.5;
-    cb.setTransform(transform);
+    cb.setMin(Eigen::Vector4f(-2.5, -0.1, 0, 1.0));
+    cb.setMax(Eigen::Vector4f(2.5, 0.25, 2.5, 1.0));
 
     cb.setInputCloud(cloud);
 

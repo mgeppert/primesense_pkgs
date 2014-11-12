@@ -38,10 +38,13 @@ private:
 
     pcl::CropBox<POINTTYPE> lowerBox;
     pcl::CropBox<POINTTYPE> upperBox;
+    pcl::CropBox<POINTTYPE> smallBox;
+    pcl::CropBox<POINTTYPE> triangleBox;
 //    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE> octree;
 
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+    pcl::PointCloud<POINTTYPE>::Ptr cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
 //    pcl::PointCloud<POINTTYPE>::Ptr removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
 //    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);

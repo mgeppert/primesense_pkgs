@@ -25,11 +25,23 @@ ObjectFinder::ObjectFinder(){
 
     lowerBox = pcl::CropBox<POINTTYPE>();
     lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
-    lowerBox.setMax(Eigen::Vector4f(10.0, 0.1, 10.0, 1.0));
+    lowerBox.setMax(Eigen::Vector4f(10.0, 0.08, 2.5, 1.0));
 
     upperBox = pcl::CropBox<POINTTYPE>();
-    upperBox.setMin(Eigen::Vector4f(-10.0, 0.1, 0.0, 1.0));
-    upperBox.setMax(Eigen::Vector4f(10.0, 0.2, 10.0, 1.0));
+    upperBox.setMin(Eigen::Vector4f(-10.0, 0.08, 0.0, 1.0));
+    upperBox.setMax(Eigen::Vector4f(10.0, 0.25, 2.5, 1.0));
+
+    smallBox = pcl::CropBox<POINTTYPE>();
+    smallBox.setMin(Eigen::Vector4f(-0.4, -0.1, 0.1, 1.0));
+    smallBox.setMax(Eigen::Vector4f(0.4, 0.25, 1.0, 1.0));
+
+    triangleBox = pcl::CropBox<POINTTYPE>();
+    triangleBox.setMin(Eigen::Vector4f(-0.4, -0.1, 0.1, 1.0));
+    triangleBox.setMax(Eigen::Vector4f(0.4, 0.25, 1.0, 1.0));
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+    transform(0,2) = -0.4d/1.0d;
+    transform(0,3) = 0.4;
+    triangleBox.setTransform(transform);
 
 //    float resolution = 32.0f;
 //    octree = pcl::octree::OctreePointCloudChangeDetector<POINTTYPE>::Ptr(new pcl::octree::OctreePointCloudChangeDetector<pcl::PointXYZ>(resolution));
@@ -56,7 +68,11 @@ void ObjectFinder::findObjects(){
 
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
-    ROS_INFO("lower projection points, before: %lu, after: %lu", lowerCloud->points.size(), lowerProjection->points.size());
+
+    upperProjection = cropTriangleBox(upperProjection);
+    lowerProjection = cropTriangleBox(lowerProjection);
+
+//    ROS_INFO("lower projection points, before: %lu, after: %lu", lowerCloud->points.size(), lowerProjection->points.size());
 
     ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
 
@@ -125,6 +141,20 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropLowerBox(const pcl::PointCloud
 //pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
 
 //}
+
+pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc){
+
+    smallBox.setInputCloud(pc);
+    pcl::PointCloud<POINTTYPE>::Ptr smallCloud(new pcl::PointCloud<POINTTYPE>);
+    smallBox.filter(*smallCloud);
+
+    triangleBox.setInputCloud(smallCloud);
+
+    pcl::PointCloud<POINTTYPE>::Ptr triangleCloud(new pcl::PointCloud<POINTTYPE>);
+    triangleBox.filter(*triangleCloud);
+    return triangleCloud;
+}
+
 
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc){
 
