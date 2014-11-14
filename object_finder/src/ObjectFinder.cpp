@@ -43,9 +43,6 @@ ObjectFinder::ObjectFinder(){
     transform(0,3) = 0.4;
     triangleBox.setTransform(transform);
 
-//    float resolution = 32.0f;
-//    octree = pcl::octree::OctreePointCloudChangeDetector<POINTTYPE>::Ptr(new pcl::octree::OctreePointCloudChangeDetector<pcl::PointXYZ>(resolution));
-
     inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
     currentCloudTimeStamp = ros::Time::now();
 
@@ -138,10 +135,6 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropLowerBox(const pcl::PointCloud
     return croppedCloud;
 }
 
-//pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
-
-//}
-
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc){
 
     smallBox.setInputCloud(pc);
@@ -211,24 +204,6 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::getDifference(const pcl::PointClou
 
     return differenceCloud;
 }
-
-//pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr &lpc, const std::vector<int> &differenceIndices){
-
-//    pcl::PointCloud<POINTTYPE>::Ptr differenceCloud(new pcl::PointCloud<POINTTYPE>);
-////    differenceCloud->points.resize(differenceIndices.size());
-
-////    for(size_t i = 0; i < differenceIndices.size(); i++){
-////        differenceCloud->points[i] = lpc->points[differenceIndices[i]];
-////    }
-//    pcl::ExtractIndices<POINTTYPE> extractor;
-
-//    pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-//    indices->indices = differenceIndices;
-//    extractor.setIndices(indices);
-//    extractor.setInputCloud(lpc);
-//    extractor.filter(*differenceCloud);
-//    return differenceCloud;
-//}
 
 std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
 

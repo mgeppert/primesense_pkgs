@@ -13,8 +13,6 @@
 
 namespace primesense_pkgs{
 
-//using pcl::PointCloud;
-
 class ObjectFinder{
 
 public:
@@ -37,16 +35,12 @@ private:
     pcl::CropBox<POINTTYPE> upperBox;
     pcl::CropBox<POINTTYPE> smallBox;
     pcl::CropBox<POINTTYPE> triangleBox;
-//    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE> octree;
 
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
-//    pcl::PointCloud<POINTTYPE>::Ptr removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
-//    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
-//    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
     std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     void sendMarker(pcl::PointXYZ point, int id);
 };
