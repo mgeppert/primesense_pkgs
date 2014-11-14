@@ -24,7 +24,7 @@ ObjectFinder::ObjectFinder(){
     markerPub = nh.advertise<visualization_msgs::Marker>("object_finder/marker", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
-    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.015, 0.0, 1.0));
+    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.005, 0.0, 1.0));
     lowerBox.setMax(Eigen::Vector4f(10.0, 0.08, 2.5, 1.0));
 
     upperBox = pcl::CropBox<POINTTYPE>();

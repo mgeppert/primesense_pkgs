@@ -77,9 +77,9 @@ bool Calibrator::calibrate(){
         }
 
 //        averageHeight += -coefficients->values[1]*coefficients->values[3];
-        averageHeight += (double) -coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
+        averageHeight += (double) coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
 //        allHeights[numVals] = -coefficients->values[1]*coefficients->values[3];
-        allHeights[numVals] = (double) -coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
+        allHeights[numVals] = (double) coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
 
         numVals++;
 
