@@ -1,7 +1,5 @@
 #include "CloudPreparator.h"
 
-//#include <ros/ros.h>
-
 #include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -36,31 +34,10 @@ void CloudPreparator::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& ms
 
 void CloudPreparator::prepareCloud(){
 
-    ROS_INFO("#points before: %lu", cloud->points.size());
-
     PointCloud<POINTTYPE>::Ptr cCloud = cropTiltedBox(cloud);
     PointCloud<POINTTYPE>::Ptr rotatedCloud = adaptViewPoint(cCloud);
-    ROS_INFO("#points after adaptViewPoint: %lu", rotatedCloud->points.size());
     PointCloud<POINTTYPE>::Ptr croppedCloud = cropBox(rotatedCloud);
-    ROS_INFO("#points after cropping: %lu", croppedCloud->points.size());
 //    PointCloud<POINTTYPE>::Ptr filteredCloud = removeOutliers(croppedCloud);
-//    PointCloud<POINTTYPE>::Ptr noGroundCloud = removeGroundPlane(rotatedCloud);
-
-//    ROS_INFO("#points after: %lu", filteredCloud->points.size());
-
-    //find smallest point for testing
-//    double minY = 1000.0d;
-//    double X;
-//    double Z;
-//    for(size_t i = 0; i < filteredCloud->points.size(); i++){
-//        if(filteredCloud->points[i].y < minY){
-//            ROS_INFO("y: %f", filteredCloud->points[i].y);
-//            minY = filteredCloud->points[i].y;
-//            Z = filteredCloud->points[i].z;
-//            X = filteredCloud->points[i].x;
-//        }
-//    }
-//    ROS_INFO("minY: %f (X: %f, Z: %f)", minY, X, Z);
 
     sensor_msgs::PointCloud2 preparedCloudMsg;
     pcl::toROSMsg(*croppedCloud, preparedCloudMsg);
@@ -93,14 +70,6 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
-//    // Define a translation of 2.5 meters on the x axis.
-//    transform_2.translation() << 2.5, 0.0, 0.0;
-
-    // The same rotation matrix as before; tetha radians arround X axis
-//    transform.rotate (Eigen::AngleAxisf ( PI / 4.0, Eigen::Vector3f::UnitX()));
-
-//    float theta = M_PI/4;
-
     double height = 0.0;
     ros::param::getCached("/calibration/height", height);
     transform.translation() << 0.0, height, 0.0;
@@ -109,14 +78,10 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 
     transform.rotate(Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitZ()));
 
-    ROS_INFO("rotate by %f rads around z-axis", M_PI);
-
     // rotate tetha radians arround X axis
-      transform.rotate (Eigen::AngleAxisf (theta_x, Eigen::Vector3f::UnitX()));
+    transform.rotate (Eigen::AngleAxisf (theta_x, Eigen::Vector3f::UnitX()));
 
-      ROS_INFO("rotate by %f rads around x-axis", theta_x);
-
-
+    ROS_INFO("rotate by %f rads around x-axis", theta_x);
 
     // Executing the transformation
     pcl::PointCloud<POINTTYPE>::Ptr transformed_cloud (new pcl::PointCloud<POINTTYPE>());
@@ -124,44 +89,6 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 
     return transformed_cloud;
 }
-
-//PointCloud<POINTTYPE>::Ptr CloudPreparator::removeGroundPlane(const PointCloud<POINTTYPE>::Ptr &cloud){
-
-//    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-//    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-//    PointCloud<POINTTYPE>::Ptr newCloud(new pcl::PointCloud<POINTTYPE>);
-
-//    ROS_INFO("points before removing plane: %lu", cloud->points.size());
-
-//    pcl::SACSegmentation<POINTTYPE> seg;
-////    seg.setOptimizeCoefficients (true);
-
-//    seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);
-//    seg.setAxis(Eigen::Vector3f::UnitY());
-//    seg.setEpsAngle(0.087); //~5 degrees
-//    seg.setMethodType (pcl::SAC_RANSAC);
-//    seg.setDistanceThreshold (0.005);
-
-//    seg.setInputCloud (cloud);
-//    seg.segment (*inliers, *coefficients);
-
-//    if(inliers->indices.size() > 50){
-//        ROS_INFO("plane with %lu points detected", inliers->indices.size());
-//        pcl::ExtractIndices<POINTTYPE> extractor;
-//        extractor.setIndices(inliers);
-//        extractor.setNegative(true);
-//        extractor.setInputCloud(cloud);
-//        extractor.filter(*newCloud);
-//    }
-//    else{
-//        ROS_INFO("not enough points in ground plane, leave");
-//        newCloud = cloud->makeShared();
-//    }
-
-//    ROS_INFO("points after removing plane: %lu", newCloud->points.size());
-
-//    return newCloud;
-//}
 
 PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>::Ptr &cloud){
 
@@ -186,6 +113,5 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::removeOutliers(const PointCloud<POIN
     sor.filter (*filteredCloud);
     return filteredCloud;
 }
-
 
 }//namespace primesense_pkgs

@@ -23,8 +23,6 @@ public:
 
 private:
 
-//    static const double PI = 3.1415926535;;
-
     PointCloud<POINTTYPE>::Ptr cloud;
 
     ros::Subscriber sub;
@@ -32,12 +30,9 @@ private:
 
     PointCloud<POINTTYPE>::Ptr cropTiltedBox(const PointCloud<POINTTYPE>::Ptr& cloud);
     PointCloud<POINTTYPE>::Ptr adaptViewPoint(const PointCloud<POINTTYPE>::Ptr& cloud);
-//    PointCloud<POINTTYPE>::Ptr removeGroundPlane(const PointCloud<POINTTYPE>::Ptr& cloud);
     PointCloud<POINTTYPE>::Ptr cropBox(const PointCloud<POINTTYPE>::Ptr& cloud);
     PointCloud<POINTTYPE>::Ptr removeOutliers(const PointCloud<POINTTYPE>::Ptr& cloud);
 
 };
-
-}
-
-#endif // CLOUD_PREPARATOR_H
+}//namespace primesense_pkgs
+#endif // CLOUD_PREPARATOR_NODE_H
