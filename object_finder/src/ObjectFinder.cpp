@@ -24,7 +24,7 @@ ObjectFinder::ObjectFinder(){
     markerPub = nh.advertise<visualization_msgs::Marker>("object_finder/marker", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
-    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
+    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.015, 0.0, 1.0));
     lowerBox.setMax(Eigen::Vector4f(10.0, 0.08, 2.5, 1.0));
 
     upperBox = pcl::CropBox<POINTTYPE>();
@@ -236,9 +236,9 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
-    ec.setClusterTolerance (0.02); // 2cm
-    ec.setMinClusterSize (20);
-    ec.setMaxClusterSize (2000);
+    ec.setClusterTolerance (0.03); // 3cm
+    ec.setMinClusterSize (200);
+    ec.setMaxClusterSize (5000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
     ec.extract(cluster_indices);

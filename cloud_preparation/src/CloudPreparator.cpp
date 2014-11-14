@@ -5,6 +5,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/plane_refinement_comparator.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/statistical_outlier_removal.h>
@@ -33,10 +34,30 @@ void CloudPreparator::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& ms
 
 void CloudPreparator::prepareCloud(){
 
+    ROS_INFO("#points before: %lu", cloud->points.size());
+
     PointCloud<POINTTYPE>::Ptr rotatedCloud = adaptViewPoint(cloud);
+    ROS_INFO("#points after adaptViewPoint: %lu", rotatedCloud->points.size());
     PointCloud<POINTTYPE>::Ptr croppedCloud = cropBox(rotatedCloud);
+    ROS_INFO("#points after cropping: %lu", croppedCloud->points.size());
     PointCloud<POINTTYPE>::Ptr filteredCloud = removeOutliers(croppedCloud);
 //    PointCloud<POINTTYPE>::Ptr noGroundCloud = removeGroundPlane(rotatedCloud);
+
+    ROS_INFO("#points after: %lu", filteredCloud->points.size());
+
+    //find smallest point for testing
+    double minY = 1000.0d;
+    double X;
+    double Z;
+    for(size_t i = 0; i < filteredCloud->points.size(); i++){
+        if(filteredCloud->points[i].y < minY){
+            ROS_INFO("y: %f", filteredCloud->points[i].y);
+            minY = filteredCloud->points[i].y;
+            Z = filteredCloud->points[i].z;
+            X = filteredCloud->points[i].x;
+        }
+    }
+    ROS_INFO("minY: %f (X: %f, Z: %f)", minY, X, Z);
 
     sensor_msgs::PointCloud2 preparedCloudMsg;
     pcl::toROSMsg(*filteredCloud, preparedCloudMsg);
@@ -58,7 +79,7 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 
     double height = 0.0;
     ros::param::getCached("/calibration/height", height);
-    transform.translation() << 0.0, height, 0.0;
+    transform.translation() << 0.0, -height, 0.0;
     double theta_x = 0.0;
     ros::param::getCached("/calibration/x_angle", theta_x);
 
