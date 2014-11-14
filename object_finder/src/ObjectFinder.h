@@ -3,16 +3,13 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-//#include <std_msgs/Time.h>
 
 //PCL
 #include <pcl/filters/crop_box.h>
-//#include <pcl/octree/octree.h>
-//#include <pcl/octree/octree_pointcloud_changedetector.h>
 
 #include <vector>
 
-#define POINTTYPE pcl::PointXYZRGB
+#define POINTTYPE pcl::PointXYZ
 
 namespace primesense_pkgs{
 

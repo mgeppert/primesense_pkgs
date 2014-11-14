@@ -147,7 +147,7 @@ pcl::ModelCoefficients::Ptr Calibrator::findGroundPlane(PointCloud<POINTTYPE>::P
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
     seg.setMaxIterations(100);
-    seg.setDistanceThreshold (0.001);
+    seg.setDistanceThreshold (0.003);
 
     seg.setInputCloud (pc);
     seg.segment (*inliers, *coefficients);
