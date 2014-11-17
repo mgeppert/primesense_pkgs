@@ -93,7 +93,7 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>::Ptr &cloud){
 
     pcl::CropBox<POINTTYPE> cb;
-    cb.setMin(Eigen::Vector4f(-2.5, -0.1, 0, 1.0));
+    cb.setMin(Eigen::Vector4f(-2.5, 0.01, 0, 1.0));
     cb.setMax(Eigen::Vector4f(2.5, 0.25, 2.5, 1.0));
 
     cb.setInputCloud(cloud);

@@ -24,19 +24,19 @@ ObjectFinder::ObjectFinder(){
     markerPub = nh.advertise<visualization_msgs::Marker>("object_finder/marker", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
-    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.005, 0.0, 1.0));
-    lowerBox.setMax(Eigen::Vector4f(10.0, 0.08, 2.5, 1.0));
+    lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
+    lowerBox.setMax(Eigen::Vector4f(10.0, 0.06, 2.5, 1.0));
 
     upperBox = pcl::CropBox<POINTTYPE>();
-    upperBox.setMin(Eigen::Vector4f(-10.0, 0.08, 0.0, 1.0));
+    upperBox.setMin(Eigen::Vector4f(-10.0, 0.06, 0.0, 1.0));
     upperBox.setMax(Eigen::Vector4f(10.0, 0.25, 2.5, 1.0));
 
     smallBox = pcl::CropBox<POINTTYPE>();
-    smallBox.setMin(Eigen::Vector4f(-0.4, -0.1, 0.1, 1.0));
+    smallBox.setMin(Eigen::Vector4f(-0.4, 0.0, 0.1, 1.0));
     smallBox.setMax(Eigen::Vector4f(0.4, 0.25, 1.0, 1.0));
 
     triangleBox = pcl::CropBox<POINTTYPE>();
-    triangleBox.setMin(Eigen::Vector4f(-0.4, -0.1, 0.1, 1.0));
+    triangleBox.setMin(Eigen::Vector4f(-0.4, 0.0, 0.1, 1.0));
     triangleBox.setMax(Eigen::Vector4f(0.4, 0.25, 1.0, 1.0));
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
     transform(0,2) = -0.4d/1.0d;
@@ -66,13 +66,6 @@ void ObjectFinder::findObjects(){
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
 
-    upperProjection = cropTriangleBox(upperProjection);
-    lowerProjection = cropTriangleBox(lowerProjection);
-
-//    ROS_INFO("lower projection points, before: %lu, after: %lu", lowerCloud->points.size(), lowerProjection->points.size());
-
-    ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
-
     sensor_msgs::PointCloud2 upperProjectionMsg;
     pcl::toROSMsg(*upperProjection, upperProjectionMsg);
     upperProjectionPub.publish(upperProjectionMsg);
@@ -80,6 +73,13 @@ void ObjectFinder::findObjects(){
     sensor_msgs::PointCloud2 lowerProjectionMsg;
     pcl::toROSMsg(*lowerProjection, lowerProjectionMsg);
     lowerProjectionPub.publish(lowerProjectionMsg);
+
+    upperProjection = cropTriangleBox(upperProjection);
+    lowerProjection = cropTriangleBox(lowerProjection);
+
+//    ROS_INFO("lower projection points, before: %lu, after: %lu", lowerCloud->points.size(), lowerProjection->points.size());
+
+    ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
 
 //    std::vector<int> differenceIndices = getDifferenceIndices(upperProjection, lowerProjection);
 
@@ -212,7 +212,7 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
     ec.setClusterTolerance (0.03); // 3cm
-    ec.setMinClusterSize (200);
+    ec.setMinClusterSize (300);
     ec.setMaxClusterSize (5000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
