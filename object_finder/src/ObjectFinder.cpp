@@ -1,6 +1,6 @@
 #include "ObjectFinder.h"
 
-#include <object_finder/Objects.h>
+#include <object_finder/Positions.h>
 #include <visualization_msgs/Marker.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -17,11 +17,11 @@ ObjectFinder::ObjectFinder(){
     ros::NodeHandle nh;
 
     sub = nh.subscribe("/cloud_preparation/prepared_cloud", 1, &ObjectFinder::cloudCallback, this);
-    objectsPub = nh.advertise<object_finder::Objects>("object_finder/objects", 1);
-    upperProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("object_finder/upper_projection", 1);
-    lowerProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("object_finder/lower_projection", 1);
-    differencesPub = nh.advertise<sensor_msgs::PointCloud2>("object_finder/differences", 1);
-    markerPub = nh.advertise<visualization_msgs::Marker>("object_finder/marker", 1);
+    objectsPub = nh.advertise<object_finder::Positions>("object_finder/positions", 1);
+    upperProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/upper_projection", 1);
+    lowerProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/lower_projection", 1);
+    differencesPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/differences", 1);
+    markerPub = nh.advertise<visualization_msgs::Marker>("/object_finder/marker", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
     lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
@@ -53,6 +53,7 @@ void ObjectFinder::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
 //    ROS_INFO("received cloud");
 
     pcl::fromROSMsg(*msg, *inputCloud);
+    currentCloudTimeStamp = msg->header.stamp;
     return;
 }
 
@@ -96,9 +97,9 @@ void ObjectFinder::findObjects(){
 
     std::vector<pcl::PointXYZ> positions = getObjectPositions(differenceCloud);
 
-    object_finder::Objects objects;
-    objects.header = std_msgs::Header();
-    objects.header.stamp = currentCloudTimeStamp;
+    object_finder::Positions object_pos;
+    object_pos.header = std_msgs::Header();
+    object_pos.header.stamp = currentCloudTimeStamp;
 
     for(size_t i = 0; i < positions.size(); i++){
         geometry_msgs::Point point;
@@ -106,13 +107,13 @@ void ObjectFinder::findObjects(){
         point.y = positions[i].y;
         point.z = positions[i].z;
 
-        objects.object_positions.push_back(point);
-        objects.object_radiuses.push_back(0.02);
+        object_pos.object_positions.push_back(point);
+        object_pos.object_radiuses.push_back(0.02);
 
         sendMarker(positions[i], i);
     }
 
-    objectsPub.publish(objects);
+    objectsPub.publish(object_pos);
 
     return;
 }

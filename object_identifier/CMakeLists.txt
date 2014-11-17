@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(identify_objects)
+project(object_identifier)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -46,11 +46,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Objects.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,10 +66,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -86,6 +85,7 @@ catkin_package(
 #  LIBRARIES identify_objects
 #  CATKIN_DEPENDS geometry_msgs pcl_conversions pcl_ros roscpp sensor_msgs
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -105,14 +105,14 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(identify_objects_node src/identify_objects_node.cpp)
+add_executable(object_identifier_node src/object_identifier_node.cpp src/ObjectIdentifier.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(identify_objects_node identify_objects_generate_messages_cpp)
+add_dependencies(object_identifier_node object_identifier_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(identify_objects_node
+target_link_libraries(object_identifier_node
   ${catkin_LIBRARIES}
 )
 
