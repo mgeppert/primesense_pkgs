@@ -110,7 +110,7 @@ add_executable(object_finder_node src/object_finder_node.cpp src/ObjectFinder.cp
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(object_finder_node object_finder_generate_messages_cpp)
+add_dependencies(object_finder_node object_finder_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_finder_node
