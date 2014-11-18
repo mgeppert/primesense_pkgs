@@ -8,6 +8,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include <vector>
+
 #define POINTTYPE pcl::PointXYZRGB
 
 namespace primesense_pkgs{
@@ -22,8 +24,9 @@ public:
     void prepareCloud();
 
 private:
-
+    std::vector<PointCloud<POINTTYPE>::Ptr> inputClouds;
     PointCloud<POINTTYPE>::Ptr cloud;
+    size_t cloudInd;
 
     ros::Subscriber sub;
     ros::Publisher pub;

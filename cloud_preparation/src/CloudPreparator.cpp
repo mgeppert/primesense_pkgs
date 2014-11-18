@@ -17,7 +17,9 @@ CloudPreparator::CloudPreparator(){
     sub = nh.subscribe("/camera/depth_registered/points", 1, &CloudPreparator::cloudCallback, this);
     pub = nh.advertise<sensor_msgs::PointCloud2>("/cloud_preparation/prepared_cloud", 1);
 
+    inputClouds = std::vector<PointCloud<POINTTYPE>::Ptr>(2, PointCloud<POINTTYPE>::Ptr(new PointCloud<POINTTYPE>));
     cloud = PointCloud<POINTTYPE>::Ptr(new PointCloud<POINTTYPE>);
+    cloudInd = 0;
     return;
 }
 
@@ -25,9 +27,10 @@ void CloudPreparator::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& ms
 
     ROS_INFO("received cloud");
 
-    PointCloud<POINTTYPE>::Ptr tempCloud(new PointCloud<POINTTYPE>);
-    pcl::fromROSMsg(*msg, *tempCloud);
-    cloud = tempCloud;
+//    PointCloud<POINTTYPE>::Ptr tempCloud(new PointCloud<POINTTYPE>);
+    pcl::fromROSMsg(*msg, *inputClouds[cloudInd]);
+    *cloud = *inputClouds[0] + *inputClouds[1];
+    cloudInd = (cloudInd + 1) % 2;
 
     return;
 }
