@@ -4,6 +4,7 @@
 #include <visualization_msgs/Marker.h>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/segment_differences.h>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -59,8 +60,9 @@ void ObjectFinder::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
 
 void ObjectFinder::findObjects(){
 
-    pcl::PointCloud<POINTTYPE>::Ptr upperCloud = cropUpperBox(inputCloud);
-    pcl::PointCloud<POINTTYPE>::Ptr lowerCloud = cropLowerBox(inputCloud);
+    pcl::PointCloud<POINTTYPE>::Ptr dsCloud = downSample(inputCloud);
+    pcl::PointCloud<POINTTYPE>::Ptr upperCloud = cropUpperBox(dsCloud);
+    pcl::PointCloud<POINTTYPE>::Ptr lowerCloud = cropLowerBox(dsCloud);
 
     ROS_INFO("#points: upper: %lu, lower: %lu", upperCloud->points.size(), lowerCloud->points.size());
 
@@ -116,6 +118,18 @@ void ObjectFinder::findObjects(){
     objectsPub.publish(object_pos);
 
     return;
+}
+
+pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::downSample(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
+
+    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+    grid.setLeafSize(0.002, 0.002, 0.002);
+    grid.setInputCloud(pc);
+
+    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
+    grid.filter(*dsCloud);
+
+    return dsCloud;
 }
 
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
