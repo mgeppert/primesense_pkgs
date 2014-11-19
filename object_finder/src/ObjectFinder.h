@@ -19,6 +19,8 @@ public:
     ObjectFinder();
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void findObjects();
+//    static bool positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs);
+
 
 private:
     ros::Subscriber sub;
@@ -43,6 +45,7 @@ private:
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
     std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+    static bool positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs);
     void sendMarker(pcl::PointXYZ point, int id);
 };
 }//namespace primesense_pkgs

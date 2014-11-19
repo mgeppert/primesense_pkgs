@@ -11,6 +11,8 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/filters/project_inliers.h>
 
+#include <algorithm>
+
 namespace primesense_pkgs{
 
 ObjectFinder::ObjectFinder(){
@@ -98,6 +100,8 @@ void ObjectFinder::findObjects(){
     differencesPub.publish(differenceCloudMsg);
 
     std::vector<pcl::PointXYZ> positions = getObjectPositions(differenceCloud);
+
+    std::sort(positions.begin(), positions.end(), ObjectFinder::positionCompare);
 
     object_finder::Positions object_pos;
     object_pos.header = std_msgs::Header();
@@ -252,6 +256,12 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     }
 
     return objectPositions;
+}
+
+bool ObjectFinder::positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs){
+    double lhsDist = std::sqrt(std::pow(lhs.x, 2) + std::pow(lhs.z, 2));
+    double rhsDist = std::sqrt(std::pow(rhs.x, 2) + std::pow(rhs.z, 2));
+    return lhsDist < rhsDist;
 }
 
 void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
