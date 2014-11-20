@@ -4,12 +4,13 @@
 #include <visualization_msgs/Marker.h>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/common/centroid.h>
 #include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
-#include <pcl/segmentation/segment_differences.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
 #include <pcl/filters/project_inliers.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/segment_differences.h>
 
 #include <algorithm>
 
@@ -82,21 +83,13 @@ void ObjectFinder::findObjects(){
     upperProjection = cropTriangleBox(upperProjection);
     lowerProjection = cropTriangleBox(lowerProjection);
 
-//    ROS_INFO("lower projection points, before: %lu, after: %lu", lowerCloud->points.size(), lowerProjection->points.size());
-
     ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
-
-//    std::vector<int> differenceIndices = getDifferenceIndices(upperProjection, lowerProjection);
-
-//    pcl::PointCloud<POINTTYPE>::Ptr differenceCloud = getDifferenceCloud(lowerCloud, differenceIndices);
 
     pcl::PointCloud<POINTTYPE>::Ptr differenceCloud = getDifference(upperProjection, lowerProjection);
     ROS_INFO("#points in differenceCloud: %lu", differenceCloud->points.size());
 
     sensor_msgs::PointCloud2 differenceCloudMsg;
     pcl::toROSMsg(*differenceCloud, differenceCloudMsg);
-//    differenceCloudMsg.header = std_msgs::Header();
-//    differenceCloudMsg.header.stamp = currentCloudTimeStamp;
     differencesPub.publish(differenceCloudMsg);
 
     std::vector<pcl::PointXYZ> positions = getObjectPositions(differenceCloud);
@@ -172,12 +165,6 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::projectToZeroPlane(pcl::PointCloud
 
     pcl::PointCloud<POINTTYPE>::Ptr projectedCloud = pc->makeShared();
 
-//    for(size_t i = 0; i < projectedCloud->points.size(); i++){
-//        if(!isnan(projectedCloud->points[i].y)){
-//            ROS_INFO("setting y from %f to 0", pc->points[i].y);
-//            pc->points[i].y = 0;
-//        }
-//    }
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     coefficients->values.resize(4);
     coefficients->values[0] = 0;
@@ -194,21 +181,6 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::projectToZeroPlane(pcl::PointCloud
 }
 
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::getDifference(const pcl::PointCloud<POINTTYPE>::Ptr &upc, const pcl::PointCloud<POINTTYPE>::Ptr &lpc){
-
-//    float resolution = 32.0f;
-//    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE> octree(resolution);
-
-//    octree.setInputCloud(upc);
-//    octree.addPointsFromInputCloud();
-
-//    octree.switchBuffers();
-
-//    octree.setInputCloud(lpc);
-//    octree.addPointsFromInputCloud();
-
-//    std::vector<int> newPointIdxVector;
-
-//    octree.getPointIndicesFromNewVoxels(newPointIdxVector);
 
     pcl::PointCloud<POINTTYPE>::Ptr differenceCloud(new pcl::PointCloud<POINTTYPE>);
 
@@ -231,8 +203,8 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
     ec.setClusterTolerance (0.03); // 3cm
-    ec.setMinClusterSize (300);
-    ec.setMaxClusterSize (5000);
+    ec.setMinClusterSize (100);
+    ec.setMaxClusterSize (3000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
     ec.extract(cluster_indices);
@@ -240,21 +212,30 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     std::vector<pcl::PointXYZ> objectPositions(0);
 
     for(std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(), end = cluster_indices.end(); it != end; it++){
+
+        //TODO: downsample again to get a more uniform distribution of points in the cloud???
+
+        Eigen::Vector4d centroid;
+        pcl::compute3DCentroid(*pc, *it, centroid);
         pcl::PointXYZ midPoint;
-        midPoint.x = 0;
-        midPoint.y = 0;
-        for(std::vector<int>::const_iterator pit = it->indices.begin(), pend = it->indices.end(); pit != pend; pit++){
-            midPoint.x += pc->points[*pit].x;
-            midPoint.y += pc->points[*pit].y;
-            midPoint.z += pc->points[*pit].z;
-        }
-        midPoint.x /= it->indices.size();
-        midPoint.y /= it->indices.size();
-        midPoint.z /= it->indices.size();
-        ROS_INFO("object position: (%f, %f)", midPoint.x, midPoint.y);
+
+        midPoint.x = centroid[0];
+        midPoint.y = centroid[1];
+        midPoint.z = centroid[2];
+//        midPoint.x = 0;
+//        midPoint.y = 0;
+//        midPoint.z = 0;
+//        for(std::vector<int>::const_iterator pit = it->indices.begin(), pend = it->indices.end(); pit != pend; pit++){
+//            midPoint.x += pc->points[*pit].x;
+//            midPoint.y += pc->points[*pit].y;
+//            midPoint.z += pc->points[*pit].z;
+//        }
+//        midPoint.x /= it->indices.size();
+//        midPoint.y /= it->indices.size();
+//        midPoint.z /= it->indices.size();
+        ROS_INFO("object position: (%f, %f, %f)", midPoint.x, midPoint.y, midPoint.z);
         objectPositions.push_back(midPoint);
     }
-
     return objectPositions;
 }
 
