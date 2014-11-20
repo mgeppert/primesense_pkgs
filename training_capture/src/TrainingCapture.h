@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#define POINTTYPE pcl::PointXYZRGB
+#define POINTTYPE pcl::PointXYZ
 
 namespace primesense_pkgs{
 
