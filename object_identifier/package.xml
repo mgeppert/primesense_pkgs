@@ -2,7 +2,7 @@
 <package>
   <name>object_identifier</name>
   <version>0.0.0</version>
-  <description>The identify_objects package</description>
+  <description>The object_identifier package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->

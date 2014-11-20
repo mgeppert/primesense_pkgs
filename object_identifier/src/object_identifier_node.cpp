@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv){
 
-    ros::init(argc, argv, "identify_object_node");
+    ros::init(argc, argv, "object_identifier_node");
 
     primesense_pkgs::ObjectIdentifier identifier;
 
