@@ -37,5 +37,5 @@
 *.autosave
 
 #training pointclouds + testprogram
-clouds/
-*.pcd
+#clouds/
+#*.pcd
