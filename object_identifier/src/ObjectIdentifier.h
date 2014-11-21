@@ -24,8 +24,6 @@ public:
     void identifyObjects();
 
 private:
-//    ros::Subscriber cloudSub;
-//    ros::Subscriber positionSub;
     ros::Publisher objectPub;
     ros::Publisher debugPub;
 
@@ -33,15 +31,19 @@ private:
     message_filters::Subscriber<object_finder::Positions> *positionSub;
     message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, object_finder::Positions> *synchronizer;
 
+    std::vector<std::string> trainingSampleLabels;
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> trainingSamples;
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
-
     std::vector<pcl::PointXYZ> objectPositions;
     std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds;
+
 
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void positionCallback(const object_finder::Positions::ConstPtr &msg);
     void cloudPositionCallback(const sensor_msgs::PointCloud2::ConstPtr &cloudMsg, const object_finder::Positions::ConstPtr &posMsg);
     void extractObjectClouds();
+    bool loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples);
+    std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object);
 
 };
 } //namespace primesense_pkgs
