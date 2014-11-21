@@ -38,15 +38,20 @@ private:
     pcl::CropBox<POINTTYPE> smallBox;
     pcl::CropBox<POINTTYPE> triangleBox;
 
+    struct objectPose{
+        pcl::PointXYZ position;
+        double angle;
+    };
+
     pcl::PointCloud<POINTTYPE>::Ptr downSample(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
-    std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
-    static bool positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs);
-    void sendMarker(pcl::PointXYZ point, int id);
+    std::vector<ObjectFinder::objectPose> getObjectPoses(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+    static bool positionCompare(const ObjectFinder::objectPose& lhs, const ObjectFinder::objectPose& rhs);
+    void sendMarker(pcl::PointXYZ point, int id);    
 };
 }//namespace primesense_pkgs
 

@@ -92,24 +92,24 @@ void ObjectFinder::findObjects(){
     pcl::toROSMsg(*differenceCloud, differenceCloudMsg);
     differencesPub.publish(differenceCloudMsg);
 
-    std::vector<pcl::PointXYZ> positions = getObjectPositions(differenceCloud);
+    std::vector<ObjectFinder::objectPose> objectPoses = getObjectPoses(differenceCloud);
 
-    std::sort(positions.begin(), positions.end(), ObjectFinder::positionCompare);
+    std::sort(objectPoses.begin(), objectPoses.end(), ObjectFinder::positionCompare);
 
     object_finder::Positions object_pos;
     object_pos.header = std_msgs::Header();
     object_pos.header.stamp = currentCloudTimeStamp;
 
-    for(size_t i = 0; i < positions.size(); i++){
+    for(size_t i = 0; i < objectPoses.size(); i++){
         geometry_msgs::Point point;
-        point.x = positions[i].x;
-        point.y = positions[i].y;
-        point.z = positions[i].z;
+        point.x = objectPoses[i].position.x;
+        point.y = objectPoses[i].position.y;
+        point.z = objectPoses[i].position.z;
 
         object_pos.object_positions.push_back(point);
-        object_pos.object_radiuses.push_back(0.02);
+        object_pos.object_angles.push_back(objectPoses[i].angle);
 
-        sendMarker(positions[i], i);
+        sendMarker(objectPoses[i].position, i);
     }
 
     objectsPub.publish(object_pos);
@@ -196,7 +196,7 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::getDifference(const pcl::PointClou
     return differenceCloud;
 }
 
-std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
+std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
 
     pcl::search::KdTree<POINTTYPE>::Ptr kdTree (new pcl::search::KdTree<POINTTYPE>);
 
@@ -209,39 +209,57 @@ std::vector<pcl::PointXYZ> ObjectFinder::getObjectPositions(const pcl::PointClou
     ec.setInputCloud (pc);
     ec.extract(cluster_indices);
 
-    std::vector<pcl::PointXYZ> objectPositions(0);
+    std::vector<ObjectFinder::objectPose> objectPoses(0);
 
     for(std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(), end = cluster_indices.end(); it != end; it++){
 
-        //TODO: downsample again to get a more uniform distribution of points in the cloud???
+        Eigen::Vector4d massCentroid;
+        pcl::compute3DCentroid(*pc, *it, massCentroid);
+        pcl::PointXYZ centerOfMass;
+        centerOfMass.x = massCentroid[0];
+        centerOfMass.y = massCentroid[1];
+        centerOfMass.z = massCentroid[2];
 
-        Eigen::Vector4d centroid;
-        pcl::compute3DCentroid(*pc, *it, centroid);
+        //downsample again to get more uniform distribution of points
+        pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+        grid.setLeafSize(0.002, 0.002, 0.002);
+        grid.setInputCloud(pc);
+        pcl::PointIndicesPtr inds(new pcl::PointIndices);
+        inds->indices = it->indices;
+        grid.setIndices(inds);
+
+        pcl::PointCloud<POINTTYPE>::Ptr dsObject(new pcl::PointCloud<POINTTYPE>);
+        grid.filter(*dsObject);
+
+        Eigen::Vector4d midCentroid;
+        pcl::compute3DCentroid(*dsObject, midCentroid);
         pcl::PointXYZ midPoint;
+        midPoint.x = midCentroid[0];
+        midPoint.y = midCentroid[1];
+        midPoint.z = midCentroid[2];
 
-        midPoint.x = centroid[0];
-        midPoint.y = centroid[1];
-        midPoint.z = centroid[2];
-//        midPoint.x = 0;
-//        midPoint.y = 0;
-//        midPoint.z = 0;
-//        for(std::vector<int>::const_iterator pit = it->indices.begin(), pend = it->indices.end(); pit != pend; pit++){
-//            midPoint.x += pc->points[*pit].x;
-//            midPoint.y += pc->points[*pit].y;
-//            midPoint.z += pc->points[*pit].z;
-//        }
-//        midPoint.x /= it->indices.size();
-//        midPoint.y /= it->indices.size();
-//        midPoint.z /= it->indices.size();
-        ROS_INFO("object position: (%f, %f, %f)", midPoint.x, midPoint.y, midPoint.z);
-        objectPositions.push_back(midPoint);
+        //compute angle
+        double xVec = centerOfMass.x - midPoint.x;
+        double zVec = centerOfMass.z - midPoint.z;
+
+        ROS_INFO("offset: %f, %f", xVec, zVec);
+
+        //angle of the object in comparison to unit vector -z
+        double angle = std::atan2(-zVec, xVec);
+
+        ROS_INFO("object position: (%f, %f, %f); angle: %f", midPoint.x, midPoint.y, midPoint.z, angle);
+
+        ObjectFinder::objectPose pose;
+        pose.position = midPoint;
+        pose.angle = angle;
+        objectPoses.push_back(pose);
     }
-    return objectPositions;
+    return objectPoses;
 }
 
-bool ObjectFinder::positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs){
-    double lhsDist = std::sqrt(std::pow(lhs.x, 2) + std::pow(lhs.z, 2));
-    double rhsDist = std::sqrt(std::pow(rhs.x, 2) + std::pow(rhs.z, 2));
+bool ObjectFinder::positionCompare(const ObjectFinder::objectPose& lhs, const ObjectFinder::objectPose& rhs){
+    double lhsDist = std::sqrt(std::pow(lhs.position.x, 2) + std::pow(lhs.position.z, 2));
+    double rhsDist = std::sqrt(std::pow(rhs.position.x, 2) + std::pow(rhs.position.z, 2));
     return lhsDist < rhsDist;
 }
 
