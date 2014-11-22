@@ -9,6 +9,7 @@
 #include <pcl/registration/icp.h>
 
 #include <fstream>
+#include <cmath>
 
 namespace primesense_pkgs{
 
@@ -24,6 +25,8 @@ ObjectIdentifier::ObjectIdentifier(){
 
     objectPub = nh.advertise<object_identifier::Objects>("/object_identifier/objects", 1);
     debugPub = nh.advertise<sensor_msgs::PointCloud2>("/object_identifier/debug", 1);
+    speakerPub = nh.advertise<std_msgs::String>("/espeak/string", 10);
+    currentObjectsTimestamp = ros::Time();
 
     inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
 
@@ -35,27 +38,57 @@ ObjectIdentifier::ObjectIdentifier(){
 }
 
 void ObjectIdentifier::identifyObjects(){
+
+    size_t nOfOrigPos = objectPositions.size();
+    removeDuplicatePositions();
+    size_t nOfNewPos = objectPositions.size();
+//    ROS_INFO("romeved %lu duplicate positions", nOfOrigPos - nOfNewPos);
     extractObjectClouds();
 
-    for(size_t i = 0; i < objectClouds.size(); i++){
+    std::vector<std::string> colors;
+    std::vector<std::string> shapes;
+    std::vector<pcl::PointXYZ> positions;
 
-        //TODO: check color??
+    for(size_t i = 0; i < objectClouds.size() && ros::ok(); i++){
+
+        if(objectClouds[i]->points.size() < 200){
+            ROS_ERROR("Not enough points in object cloud %lu", i);
+            continue;
+        }
+
+        std::string color = getObjectColor(objectClouds[i]);
+
+        if(color.compare("white") == 0){
+            ROS_ERROR("object color is white");
+            continue;
+        }
+
         std::string shape = identifySingleObject(objectClouds[i]);
 
-        ROS_INFO("%s at position (%f, %f)", shape.c_str(), objectPositions[i].x, objectPositions[i].z);
+        colors.push_back(color);
+        shapes.push_back(shape);
+        positions.push_back(objectPositions[i]);
+
+        std_msgs::String stringMsg;
+        stringMsg.data = "I see a " + color + " " + shape;
+        speakerPub.publish(stringMsg);
+
+        ROS_INFO("object %lu: %s %s at position (%f, %f)", i, color.c_str(), shape.c_str(), objectPositions[i].x, objectPositions[i].z);
     }
+
+    publishFoundObjects(colors, shapes, positions);
     return;
 }
 
 void ObjectIdentifier::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
     //just for easier debugging
-    ROS_INFO("received cloud");
+    ROS_INFO("received cloud (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
     return;
 }
 
 void ObjectIdentifier::positionCallback(const object_finder::Positions::ConstPtr &msg){
     //just for easier debugging
-    ROS_INFO("received positions");
+    ROS_INFO("received positions (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
     return;
 }
 
@@ -64,12 +97,17 @@ void ObjectIdentifier::cloudPositionCallback(const sensor_msgs::PointCloud2::Con
 
     pcl::fromROSMsg(*cloudMsg, *inputCloud);
 
+    currentObjectsTimestamp = cloudMsg->header.stamp;
+
     objectPositions = std::vector<pcl::PointXYZ>(posMsg->object_positions.size());
+    objectRotations = std::vector<double>(posMsg->object_positions.size());
 
     for(size_t i = 0; i < posMsg->object_positions.size(); i++){
         objectPositions[i].x = posMsg->object_positions[i].x;
         objectPositions[i].y = posMsg->object_positions[i].y;
         objectPositions[i].z = posMsg->object_positions[i].z;
+
+        objectRotations[i] = posMsg->object_angles[i];
     }
     return;
 }
@@ -88,6 +126,8 @@ void ObjectIdentifier::extractObjectClouds(){
 
         cb.filter(*objectClouds[i]);
     }
+
+    //TODO turn
 
     if(objectClouds.size() > 0){
         ROS_INFO("sending cloud of first object");
@@ -183,7 +223,7 @@ std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTY
     double smallestError = 100;
     int smallestErrorIndex = -1;
 
-    for(size_t i = 0; i < trainingSamples.size(); i++){
+    for(size_t i = 0; i < trainingSamples.size() && ros::ok(); i++){
         icp.setInputSource(trainingSamples[i]);
 
         pcl::PointCloud<pcl::PointXYZ> final;
@@ -195,13 +235,120 @@ std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTY
             smallestErrorIndex = i;
         }
     }
-    if(smallestError > 0.000006){
+    if(smallestError > 0.0006){
         shape = "UNKNOWN";
     }
     else{
         shape = trainingSampleLabels[smallestErrorIndex];
     }
     return shape;
+}
+
+void ObjectIdentifier::removeDuplicatePositions(){
+
+    if(objectPositions.size() > 0){
+
+        std::vector<pcl::PointXYZ> newPositions;
+        std::vector<double> newRotations;
+
+        newPositions.push_back(objectPositions[0]);
+
+        for(size_t i = 1; i < objectPositions.size(); i++){
+            bool tooClose = false;
+            for(size_t j = 0; j < newPositions.size(); j++){
+                if(std::sqrt(std::pow(objectPositions[i].x - newPositions[j].x, 2) + std::pow(objectPositions[i].z - newPositions[j].z, 2)) < 0.05){
+                    tooClose= true;
+                    break;
+                }
+            }
+            if(!tooClose){
+                newPositions.push_back(objectPositions[i]);
+                newRotations.push_back(objectRotations[i]);
+            }
+        }
+        objectPositions = newPositions;
+        objectRotations = newRotations;
+    }
+}
+
+std::string ObjectIdentifier::getObjectColor(const pcl::PointCloud<POINTTYPE>::Ptr &object){
+
+    //get mean rgb color
+    unsigned int r = 0;
+    unsigned int g = 0;
+    unsigned int b = 0;
+
+    for(size_t i = 0; i < object->points.size(); i++){
+        r += object->points[i].r;
+        g += object->points[i].g;
+        b += object->points[i].b;
+    }
+
+    r /= object->points.size();
+    g /= object->points.size();
+    b /= object->points.size();
+
+    ROS_INFO("mean rgb color: %u, %u, %u", r, g, b);
+
+    //convert to hsv
+    double R = (double) r / 255.0d;
+    double G = (double) g / 255.0d;
+    double B = (double) b / 255.0d;
+
+    double cMax = std::max(std::max(R, G), B);
+    double cMin = std::min(std::min(R, G), B);
+    double delta = cMax - cMin;
+
+    double H;
+    if(cMax == R){
+        H = std::fmod((G - B)/ delta, 6.0d) * 60;
+    }
+    else if(cMax == G){
+        H = ((B - R) / delta + 2) * 60;
+    }
+    else{ //cMax == B
+        H = ((R - G) / delta + 4) * 60;
+    }
+
+    double S;
+    if(cMax == 0){
+        S = 0;
+    }
+    else{
+        S = delta / cMax;
+    }
+
+    double V = cMax;
+
+    ROS_INFO("mean hsv color: %f, %f, %f", H, S, V);
+    //TODO check color ranges
+
+    return "unknown color";
+}
+
+void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& colors, const std::vector<std::string>& shapes, const std::vector<pcl::PointXYZ>& positions){
+
+    object_identifier::Objects objectsMsg;
+    objectsMsg.header = std_msgs::Header();
+    objectsMsg.header.stamp = currentObjectsTimestamp;
+
+    for(size_t i = 0; i < colors.size(); i++){
+
+        std_msgs::String objectString;
+        objectString.data = colors[i] + " " + shapes[i];
+        objectsMsg.objects.push_back(objectString);
+
+        geometry_msgs::Point position;
+        position.x = positions[i].x;
+        position.y = positions[i].y;
+        position.z = positions[i].z;
+
+        objectsMsg.positions.push_back(position);
+    }
+
+    objectPub.publish(objectsMsg);
+
+    return;
 }
 
 }//namespace primesense_pkgs

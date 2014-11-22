@@ -26,6 +26,8 @@ public:
 private:
     ros::Publisher objectPub;
     ros::Publisher debugPub;
+    ros::Publisher speakerPub;
+    ros::Time currentObjectsTimestamp;
 
     message_filters::Subscriber<sensor_msgs::PointCloud2> *cloudSub;
     message_filters::Subscriber<object_finder::Positions> *positionSub;
@@ -35,6 +37,7 @@ private:
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> trainingSamples;
     pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
     std::vector<pcl::PointXYZ> objectPositions;
+    std::vector<double> objectRotations;
     std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds;
 
 
@@ -44,6 +47,9 @@ private:
     void extractObjectClouds();
     bool loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples);
     std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object);
+    void removeDuplicatePositions();
+    std::string getObjectColor(const pcl::PointCloud<POINTTYPE>::Ptr& object);
+    void publishFoundObjects(const std::vector<std::string>& colors, const std::vector<std::string>& shapes, const std::vector<pcl::PointXYZ>& positions);
 
 };
 } //namespace primesense_pkgs
