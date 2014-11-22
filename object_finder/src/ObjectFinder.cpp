@@ -160,7 +160,6 @@ pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::cropTriangleBox(const pcl::PointCl
     return triangleCloud;
 }
 
-
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc){
 
     pcl::PointCloud<POINTTYPE>::Ptr projectedCloud = pc->makeShared();
@@ -202,34 +201,49 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
-    ec.setClusterTolerance (0.03); // 3cm
-    ec.setMinClusterSize (100);
-    ec.setMaxClusterSize (3000);
+    ec.setClusterTolerance (0.02); // 2cm
+    ec.setMinClusterSize (75);
+    ec.setMaxClusterSize (5000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
     ec.extract(cluster_indices);
 
     std::vector<ObjectFinder::objectPose> objectPoses(0);
 
+    ROS_INFO("%lu clusters detected", cluster_indices.size());
+
     for(std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(), end = cluster_indices.end(); it != end; it++){
 
+        ROS_INFO("size of original cloud: %lu", pc->points.size());
+        ROS_INFO("indices: %lu", it->indices.size());
+        //extract object from original cloud
+        pcl::PointCloud<POINTTYPE>::Ptr objectCloud(new pcl::PointCloud<POINTTYPE>);
+
+        pcl::ExtractIndices<POINTTYPE> extract;
+        extract.setInputCloud(pc);
+        pcl::PointIndicesPtr inds(new pcl::PointIndices);
+        inds->indices = it->indices;
+        extract.setIndices(inds);
+        extract.filter(*objectCloud);
+
+        ROS_INFO("size of objectCloud: %lu", objectCloud->points.size());
+
         Eigen::Vector4d massCentroid;
-        pcl::compute3DCentroid(*pc, *it, massCentroid);
+        pcl::compute3DCentroid(*objectCloud, massCentroid);
         pcl::PointXYZ centerOfMass;
         centerOfMass.x = massCentroid[0];
         centerOfMass.y = massCentroid[1];
         centerOfMass.z = massCentroid[2];
 
         //downsample again to get more uniform distribution of points
+//        ROS_INFO("points before downsampling object: %lu", it->indices.size());
         pcl::ApproximateVoxelGrid<POINTTYPE> grid;
         grid.setLeafSize(0.002, 0.002, 0.002);
-        grid.setInputCloud(pc);
-        pcl::PointIndicesPtr inds(new pcl::PointIndices);
-        inds->indices = it->indices;
-        grid.setIndices(inds);
+        grid.setInputCloud(objectCloud);
 
         pcl::PointCloud<POINTTYPE>::Ptr dsObject(new pcl::PointCloud<POINTTYPE>);
         grid.filter(*dsObject);
+        ROS_INFO("points after downsampling object: %lu", dsObject->points.size());
 
         Eigen::Vector4d midCentroid;
         pcl::compute3DCentroid(*dsObject, midCentroid);
