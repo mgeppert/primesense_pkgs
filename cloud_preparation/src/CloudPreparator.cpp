@@ -70,13 +70,16 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::adaptViewPoint(const PointCloud<POIN
 
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
+    //mirror cloud at x-z plane to get positive y values
+    transform(1, 1) = -1;
+
     double height = 0.0;
     ros::param::getCached("/calibration/height", height);
     transform.translation() << 0.0, height, 0.0;
     double theta_x = 0.0;
     ros::param::getCached("/calibration/x_angle", theta_x);
 
-    transform.rotate(Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitZ()));
+//    transform.rotate(Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitZ()));
 
     // rotate tetha radians arround X axis
     transform.rotate (Eigen::AngleAxisf (theta_x, Eigen::Vector3f::UnitX()));
