@@ -124,10 +124,22 @@ void ObjectIdentifier::extractObjectClouds(){
         cb.setMin(Eigen::Vector4f(op.x - 0.05, 0.0, op.z - 0.05, 1.0));
         cb.setMax(Eigen::Vector4f(op.x + 0.05, 0.05, op.z + 0.05, 1.0));
 
-        cb.filter(*objectClouds[i]);
+        pcl::PointCloud<POINTTYPE>::Ptr extractedCloud(new pcl::PointCloud<POINTTYPE>);
+//        cb.filter(*objectClouds[i]);
+        cb.filter(*extractedCloud);
+
+        //move object to origin
+        pcl::PointCloud<POINTTYPE>::Ptr originCloud(new pcl::PointCloud<POINTTYPE>);
+        Eigen::Affine3f transform_translation = Eigen::Affine3f::Identity();
+        transform_translation.translation() << -objectPositions[i].x, 0.0, -objectPositions[i].z;
+        pcl::transformPointCloud (*extractedCloud, *originCloud, transform_translation);
+
+        //rotate
+        Eigen::Affine3f transform_rotation = Eigen::Affine3f::Identity();
+        transform_rotation.rotate(Eigen::AngleAxisf(-objectRotations[i], Eigen::Vector3f::UnitY()));
+        pcl::transformPointCloud(*originCloud, *objectClouds[i], transform_rotation);
     }
 
-    //TODO turn
 
     if(objectClouds.size() > 0){
         ROS_INFO("sending cloud of first object");
