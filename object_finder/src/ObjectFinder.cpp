@@ -238,9 +238,8 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
         //downsample again to get more uniform distribution of points
 //        ROS_INFO("points before downsampling object: %lu", it->indices.size());
         pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-        grid.setLeafSize(0.002, 0.002, 0.002);
+        grid.setLeafSize(0.005, 0.005, 0.005);
         grid.setInputCloud(objectCloud);
-
         pcl::PointCloud<POINTTYPE>::Ptr dsObject(new pcl::PointCloud<POINTTYPE>);
         grid.filter(*dsObject);
         ROS_INFO("points after downsampling object: %lu", dsObject->points.size());
@@ -287,7 +286,7 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.position.x = point.x;
-    marker.pose.position.y = point.y;
+    marker.pose.position.y = point.y + 0.2;
     marker.pose.position.z = point.z;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
@@ -298,7 +297,6 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
     marker.scale.y = 0.05;
     marker.scale.z = 0.05;
 
-    // Set the color -- be sure to set alpha to something non-zero!
     marker.color.r = 0.0f;
     marker.color.g = 1.0f;
     marker.color.b = 0.0f;
