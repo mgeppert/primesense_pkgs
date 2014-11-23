@@ -286,7 +286,7 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.position.x = point.x;
-    marker.pose.position.y = point.y + 0.2;
+    marker.pose.position.y = point.y + 0.02;
     marker.pose.position.z = point.z;
     marker.pose.orientation.x = 0.0;
     marker.pose.orientation.y = 0.0;
