@@ -1,8 +1,7 @@
-4
+3
 0 Ball
 1 Cube
 2 Cylinder
-3 Patrick
 0 ball/ball0.pcd
 0 ball/ball1.pcd
 0 ball/ball2.pcd
@@ -61,20 +60,3 @@
 2 cylinder/cylinder18.pcd
 2 cylinder/cylinder19.pcd
 2 cylinder/cylinder20.pcd
-3 patrick/patrick0.pcd
-3 patrick/patrick1.pcd
-3 patrick/patrick2.pcd
-3 patrick/patrick3.pcd
-3 patrick/patrick4.pcd
-3 patrick/patrick5.pcd
-3 patrick/patrick6.pcd
-3 patrick/patrick7.pcd
-3 patrick/patrick8.pcd
-3 patrick/patrick9.pcd
-3 patrick/patrick10.pcd
-3 patrick/patrick11.pcd
-3 patrick/patrick12.pcd
-3 patrick/patrick13.pcd
-3 patrick/patrick14.pcd
-3 patrick/patrick15.pcd
-3 patrick/patrick16.pcd
