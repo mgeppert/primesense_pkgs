@@ -57,21 +57,13 @@ void ObjectIdentifier::identifyObjects(){
         }
 
         std::string color = getObjectColor(objectClouds[i]);
-        std::string shape;
 
         if(color.compare("white") == 0){
             ROS_ERROR("object color is white");
             continue;
         }
-        else if(color.compare("orange") == 0){
-            shape = "patrick";
-        }
-        else if(color.compare("purple") == 0){
-            shape = "cross";
-        }
-        else{
-            shape = identifySingleObject(objectClouds[i]);
-        }
+
+        std::string shape = identifySingleObject(objectClouds[i]);
 
         colors.push_back(color);
         shapes.push_back(shape);
@@ -229,7 +221,14 @@ bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::v
     return true;
 }
 
-std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object){
+std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object, std::string color){
+
+    if(color.compare("orange") == 0){
+        return "patrick";
+    }
+    else if(color.compare("purple") == 0){
+        return "cross";
+    }
 
     std::string shape;
 
