@@ -46,7 +46,7 @@ private:
     void cloudPositionCallback(const sensor_msgs::PointCloud2::ConstPtr &cloudMsg, const object_finder::Positions::ConstPtr &posMsg);
     void extractObjectClouds();
     bool loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples);
-    std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object);
+    std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object, std::string color);
     void removeDuplicatePositions();
     std::string getObjectColor(const pcl::PointCloud<POINTTYPE>::Ptr& object);
     std::string classifyColor(double h, double s, double v);

@@ -63,7 +63,7 @@ void ObjectIdentifier::identifyObjects(){
             continue;
         }
 
-        std::string shape = identifySingleObject(objectClouds[i]);
+        std::string shape = identifySingleObject(objectClouds[i], color);
 
         colors.push_back(color);
         shapes.push_back(shape);
