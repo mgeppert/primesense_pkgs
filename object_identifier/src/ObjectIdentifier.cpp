@@ -42,7 +42,7 @@ void ObjectIdentifier::identifyObjects(){
     size_t nOfOrigPos = objectPositions.size();
     removeDuplicatePositions();
     size_t nOfNewPos = objectPositions.size();
-//    ROS_INFO("romeved %lu duplicate positions", nOfOrigPos - nOfNewPos);
+    ROS_INFO("romeved %lu duplicate positions (now %lu instead of %lu)", nOfOrigPos - nOfNewPos, nOfNewPos, nOfOrigPos);
     extractObjectClouds();
 
     std::vector<std::string> colors;
@@ -57,13 +57,21 @@ void ObjectIdentifier::identifyObjects(){
         }
 
         std::string color = getObjectColor(objectClouds[i]);
+        std::string shape;
 
         if(color.compare("white") == 0){
             ROS_ERROR("object color is white");
             continue;
         }
-
-        std::string shape = identifySingleObject(objectClouds[i]);
+        else if(color.compare("orange") == 0){
+            shape = "patrick";
+        }
+        else if(color.compare("purple") == 0){
+            shape = "cross";
+        }
+        else{
+            shape = identifySingleObject(objectClouds[i]);
+        }
 
         colors.push_back(color);
         shapes.push_back(shape);
@@ -135,9 +143,12 @@ void ObjectIdentifier::extractObjectClouds(){
         pcl::transformPointCloud (*extractedCloud, *originCloud, transform_translation);
 
         //rotate
+        pcl::PointCloud<POINTTYPE>::Ptr alignedCloud(new pcl::PointCloud<POINTTYPE>);
         Eigen::Affine3f transform_rotation = Eigen::Affine3f::Identity();
         transform_rotation.rotate(Eigen::AngleAxisf(-objectRotations[i], Eigen::Vector3f::UnitY()));
-        pcl::transformPointCloud(*originCloud, *objectClouds[i], transform_rotation);
+        pcl::transformPointCloud(*originCloud, *alignedCloud, transform_rotation);
+
+        objectClouds[i] = alignedCloud;
     }
 
 
@@ -313,13 +324,17 @@ std::string ObjectIdentifier::getObjectColor(const pcl::PointCloud<POINTTYPE>::P
 
     double H;
     if(cMax == R){
-        H = std::fmod((G - B)/ delta, 6.0d) * 60;
+        H = ((G - B)/ delta) * 60;
     }
     else if(cMax == G){
         H = ((B - R) / delta + 2) * 60;
     }
     else{ //cMax == B
         H = ((R - G) / delta + 4) * 60;
+    }
+
+    if(H < 0){
+        H += 360.0d;
     }
 
     double S;
@@ -333,9 +348,52 @@ std::string ObjectIdentifier::getObjectColor(const pcl::PointCloud<POINTTYPE>::P
     double V = cMax;
 
     ROS_INFO("mean hsv color: %f, %f, %f", H, S, V);
-    //TODO check color ranges
 
-    return "unknown color";
+    std::string color = classifyColor(H, S, V);
+
+    return color;
+}
+
+std::string ObjectIdentifier::classifyColor(double h, double s, double v){
+
+    //ensure correct hsv values
+    if(h < 0 || h > 360 || s < 0 || s > 1 || v < 0 || v > 1){
+        ROS_ERROR("invalid hsv values in classifyColor");
+        return "invalid hsv color";
+    }
+
+    std::string color;
+    color = "unknown color";
+
+    if(s < 0.1){
+        color = "white";
+    }
+    else if(h <= 20){
+        if(s >= 2.0d / 3.0d && v >= 2.0d / 3.0d){
+            color = "orange";
+        }
+    }
+    else if(h >= 60 && h <= 178){
+        if(s >= 0.313 && v >= 0.235){
+            color = "green";
+        }
+    }
+    else if(h >= 180 && h <= 238){
+        if(s >= 0.114 && v >= 0.235){
+            color = "blue";
+        }
+    }
+    else if(h >= 240 && h <= 320){
+        if(s >= 0.353 && v >= 0.313){
+            color = "purple";
+        }
+    }
+    else if(h >= 322 && h <= 358){
+        if(s >= 0.196 && v >= 0.196){
+            color = "red";
+        }
+    }
+    return color;
 }
 
 void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& colors, const std::vector<std::string>& shapes, const std::vector<pcl::PointXYZ>& positions){
@@ -346,9 +404,13 @@ void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& color
 
     for(size_t i = 0; i < colors.size(); i++){
 
-        std_msgs::String objectString;
-        objectString.data = colors[i] + " " + shapes[i];
-        objectsMsg.objects.push_back(objectString);
+        std_msgs::String shapeString;
+        shapeString.data = shapes[i];
+        objectsMsg.shapes.push_back(shapeString);
+
+        std_msgs::String colorString;
+        colorString.data = colors[i];
+        objectsMsg.colors.push_back(colorString);
 
         geometry_msgs::Point position;
         position.x = positions[i].x;
@@ -364,4 +426,3 @@ void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& color
 }
 
 }//namespace primesense_pkgs
-

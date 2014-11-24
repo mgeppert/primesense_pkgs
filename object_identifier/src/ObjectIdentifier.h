@@ -49,6 +49,7 @@ private:
     std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object);
     void removeDuplicatePositions();
     std::string getObjectColor(const pcl::PointCloud<POINTTYPE>::Ptr& object);
+    std::string classifyColor(double h, double s, double v);
     void publishFoundObjects(const std::vector<std::string>& colors, const std::vector<std::string>& shapes, const std::vector<pcl::PointXYZ>& positions);
 
 };
