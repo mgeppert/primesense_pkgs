@@ -9,11 +9,14 @@ RecognitionController::RecognitionController(){
 
     //TODO: add subscribers + publishers
     pcPosSub = nh.subscribe("/object_finder/positions", 1, &RecognitionController::pcPosCallback, this);
-    pcObjSub = nh.subscribe("/objct_identifier/objects", 1, &RecognitionController::pcObjCallback, this);
+    pcObjSub = nh.subscribe("/object_identifier/objects", 1, &RecognitionController::pcObjCallback, this);
     ocvSub = nh.subscribe("/ocvrec/data", 1, &RecognitionController::ocvCallback, this);
     poseSub = nh.subscribe("/posOri/Twist", 1, &RecognitionController::globalPoseCallback, this);
 
     pcPosPub = nh.advertise<object_finder::Positions>("/object_identifier/positions_in", 1);
+    //TODO: change this after debugging
+    identObjPub = nh.advertise<std_msgs::String>("/recognition_controller/identified_objects", 1);
+    espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
 
     objects_to_identify = std::list<RecognitionController::unknown_object>();
     identified_objects = std::list<RecognitionController::known_object>();
@@ -242,7 +245,10 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
 
     //TODO send message for map
 
-    //TODO send message to espeak
+    //send message to espeak
+    std_msgs::String espeakMsg;
+    espeakMsg.data = ("I see a " + color + " " + shape + ".").c_str();
+    espeakPub.publish(espeakMsg);
 
     return;
 }

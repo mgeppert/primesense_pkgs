@@ -13,9 +13,9 @@
 #define OBSERVED_TIME_INTERVAL_SEC 5
 #define ALLOWED_TIME_DIFFERENCE_SEC 0.05
 #define ALLOWED_POSITION_DIFFERENCE_M 0.05
-#define MIN_POINTCLOUD_DISTANCE_M 0.4 //TO CHECK
+#define MIN_POINTCLOUD_DISTANCE_M 0.3 //TO CHECK
 #define MAX_POINTCLOUD_DISTANCE_M 1.0 //TO CHECK
-#define MIN_VOTES_FOR_OBJECT 10
+#define MIN_VOTES_FOR_OBJECT 5
 #define MIN_VOTES_FOR_POSITION 5
 
 namespace primesense_pkgs{
@@ -65,6 +65,7 @@ private:
     ros::Subscriber poseSub; //pose of robot in global space
     ros::Publisher pcPosPub; //positions (in robot space) to identify
     ros::Publisher identObjPub; //identified objects in global space
+    ros::Publisher espeakPub; //tell identified object's name
 
     void pcPosCallback(const object_finder::Positions::ConstPtr &msg);
     void pcObjCallback(const object_identifier::Objects::ConstPtr &msg);
