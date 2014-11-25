@@ -8,15 +8,17 @@ int main(int argc, char** argv){
 
     primesense_pkgs::ObjectFinder objectFinder;
 
-    ros::Rate loop_rate(10);
+    ros::spin();
 
-    while(ros::ok()){
-        ros::spinOnce();
+//    ros::Rate loop_rate(10);
 
-        objectFinder.findObjects();
+//    while(ros::ok()){
+//        ros::spinOnce();
 
-        loop_rate.sleep();
-    }
+//        objectFinder.findObjects();
+
+//        loop_rate.sleep();
+//    }
 	
 	return 0;
 }

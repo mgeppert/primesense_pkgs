@@ -47,8 +47,8 @@ ObjectFinder::ObjectFinder(){
     transform(0,3) = 0.4;
     triangleBox.setTransform(transform);
 
-    inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
-    currentCloudTimeStamp = ros::Time::now();
+//    inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
+//    currentCloudTimeStamp = ros::Time::now();
 
     return;
 }
@@ -56,12 +56,15 @@ ObjectFinder::ObjectFinder(){
 void ObjectFinder::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
 //    ROS_INFO("received cloud");
 
+    pcl::PointCloud<POINTTYPE>::Ptr inputCloud(new pcl::PointCloud<POINTTYPE>);
     pcl::fromROSMsg(*msg, *inputCloud);
-    currentCloudTimeStamp = msg->header.stamp;
+    ros::Time currentCloudTimeStamp = msg->header.stamp;
+
+    findObjects(inputCloud, currentCloudTimeStamp);
     return;
 }
 
-void ObjectFinder::findObjects(){
+void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud, ros::Time currentCloudTimeStamp){
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud = downSample(inputCloud);
     pcl::PointCloud<POINTTYPE>::Ptr upperCloud = cropUpperBox(dsCloud);
@@ -109,7 +112,7 @@ void ObjectFinder::findObjects(){
         object_pos.object_positions.push_back(point);
         object_pos.object_angles.push_back(objectPoses[i].angle);
 
-        sendMarker(objectPoses[i].position, i);
+        sendMarker(objectPoses[i].position, i, currentCloudTimeStamp);
     }
 
     objectsPub.publish(object_pos);
@@ -276,11 +279,11 @@ bool ObjectFinder::positionCompare(const ObjectFinder::objectPose& lhs, const Ob
     return lhsDist < rhsDist;
 }
 
-void ObjectFinder::sendMarker(pcl::PointXYZ point, int id){
+void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
 
     visualization_msgs::Marker marker;
     marker.header.frame_id = "camera_depth_optical_frame";
-    marker.header.stamp = currentCloudTimeStamp;
+    marker.header.stamp = timestamp;
     marker.ns = "basic_shapes";
     marker.id = id;
     marker.type = visualization_msgs::Marker::SPHERE;

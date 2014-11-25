@@ -18,7 +18,6 @@ class ObjectFinder{
 public:
     ObjectFinder();
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void findObjects();
 //    static bool positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs);
 
 
@@ -30,8 +29,8 @@ private:
     ros::Publisher differencesPub;
     ros::Publisher markerPub;
 
-    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
-    ros::Time currentCloudTimeStamp;
+//    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+//    ros::Time currentCloudTimeStamp;
 
     pcl::CropBox<POINTTYPE> lowerBox;
     pcl::CropBox<POINTTYPE> upperBox;
@@ -43,6 +42,7 @@ private:
         double angle;
     };
 
+    void findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud, ros::Time currentCloudTimeStamp);
     pcl::PointCloud<POINTTYPE>::Ptr downSample(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
@@ -51,7 +51,7 @@ private:
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
     std::vector<ObjectFinder::objectPose> getObjectPoses(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     static bool positionCompare(const ObjectFinder::objectPose& lhs, const ObjectFinder::objectPose& rhs);
-    void sendMarker(pcl::PointXYZ point, int id);    
+    void sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp);
 };
 }//namespace primesense_pkgs
 
