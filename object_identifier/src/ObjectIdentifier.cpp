@@ -18,7 +18,7 @@ ObjectIdentifier::ObjectIdentifier(){
     ros::NodeHandle nh;
     cloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, "/cloud_preparation/prepared_cloud", 1);
     cloudSub->registerCallback(&ObjectIdentifier::cloudCallback, this);
-    positionSub = new message_filters::Subscriber<object_finder::Positions>(nh, "/object_finder/positions", 1);
+    positionSub = new message_filters::Subscriber<object_finder::Positions>(nh, "/object_identifier/positions_in", 1);
     positionSub->registerCallback(&ObjectIdentifier::positionCallback, this);
     synchronizer = new message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, object_finder::Positions>(*cloudSub, *positionSub, 1000);
     synchronizer->registerCallback(&ObjectIdentifier::cloudPositionCallback, this);
