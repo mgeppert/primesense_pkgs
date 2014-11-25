@@ -8,14 +8,17 @@ int main(int argc, char **argv){
 
     primesense_pkgs::ObjectIdentifier identifier;
 
-    ros::Rate loop_rate(10);
+    ros::spin();
 
-    while(ros::ok()){
-        ros::spinOnce();
-        identifier.identifyObjects();
+//    ros::Rate loop_rate(10);
 
-        loop_rate.sleep();
-    }
+//    TODO: change to callback based
+//    while(ros::ok()){
+//        ros::spinOnce();
+//        identifier.identifyObjects();
+
+//        loop_rate.sleep();
+//    }
 
     return 0;
 }

@@ -28,7 +28,7 @@ ObjectIdentifier::ObjectIdentifier(){
     speakerPub = nh.advertise<std_msgs::String>("/espeak/string", 10);
     currentObjectsTimestamp = ros::Time();
 
-    inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
+//    inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
 
     if(!loadTrainingData(trainingSampleLabels, trainingSamples)){
         ROS_ERROR("unable to read training data");
@@ -37,13 +37,13 @@ ObjectIdentifier::ObjectIdentifier(){
     return;
 }
 
-void ObjectIdentifier::identifyObjects(){
+void ObjectIdentifier::identifyObjects(std::vector<pcl::PointXYZ> objectPositions, std::vector<double> objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud){
 
     size_t nOfOrigPos = objectPositions.size();
-    removeDuplicatePositions();
+    removeDuplicatePositions(objectPositions, objectRotations);
     size_t nOfNewPos = objectPositions.size();
     ROS_INFO("romeved %lu duplicate positions (now %lu instead of %lu)", nOfOrigPos - nOfNewPos, nOfNewPos, nOfOrigPos);
-    extractObjectClouds();
+    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds = extractObjectClouds(objectPositions, objectRotations, inputCloud);
 
     std::vector<std::string> colors;
     std::vector<std::string> shapes;
@@ -95,12 +95,13 @@ void ObjectIdentifier::positionCallback(const object_finder::Positions::ConstPtr
 void ObjectIdentifier::cloudPositionCallback(const sensor_msgs::PointCloud2::ConstPtr &cloudMsg, const object_finder::Positions::ConstPtr &posMsg){
     ROS_INFO("received cloud and positions");
 
+    pcl::PointCloud<POINTTYPE>::Ptr inputCloud(new pcl::PointCloud<POINTTYPE>);
     pcl::fromROSMsg(*cloudMsg, *inputCloud);
 
     currentObjectsTimestamp = cloudMsg->header.stamp;
 
-    objectPositions = std::vector<pcl::PointXYZ>(posMsg->object_positions.size());
-    objectRotations = std::vector<double>(posMsg->object_positions.size());
+    std::vector<pcl::PointXYZ> objectPositions = std::vector<pcl::PointXYZ>(posMsg->object_positions.size());
+    std::vector<double> objectRotations = std::vector<double>(posMsg->object_positions.size());
 
     for(size_t i = 0; i < posMsg->object_positions.size(); i++){
         objectPositions[i].x = posMsg->object_positions[i].x;
@@ -109,15 +110,18 @@ void ObjectIdentifier::cloudPositionCallback(const sensor_msgs::PointCloud2::Con
 
         objectRotations[i] = posMsg->object_angles[i];
     }
+
+    identifyObjects(objectPositions, objectRotations, inputCloud);
+
     return;
 }
 
-void ObjectIdentifier::extractObjectClouds(){
+std::vector<pcl::PointCloud<POINTTYPE>::Ptr> ObjectIdentifier::extractObjectClouds(const std::vector<pcl::PointXYZ> &objectPositions, const std::vector<double> &objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud){
 
     pcl::CropBox<POINTTYPE> cb;
     cb.setInputCloud(inputCloud);
 
-    objectClouds = std::vector<pcl::PointCloud<POINTTYPE>::Ptr>(objectPositions.size(), pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>));
+    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds = std::vector<pcl::PointCloud<POINTTYPE>::Ptr>(objectPositions.size(), pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>));
 
     for(size_t i = 0; i < objectPositions.size(); i++){
         pcl::PointXYZ op = objectPositions[i];
@@ -150,7 +154,7 @@ void ObjectIdentifier::extractObjectClouds(){
         pcl::toROSMsg(*objectClouds[0], msg);
         debugPub.publish(msg);
     }
-    return;
+    return objectClouds;
 }
 
 bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples){
@@ -266,7 +270,7 @@ std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTY
     return shape;
 }
 
-void ObjectIdentifier::removeDuplicatePositions(){
+void ObjectIdentifier::removeDuplicatePositions(std::vector<pcl::PointXYZ> &objectPositions, std::vector<double> &objectRotations){
 
     if(objectPositions.size() > 0){
 

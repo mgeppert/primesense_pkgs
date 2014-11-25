@@ -20,8 +20,7 @@ class ObjectIdentifier
 {
 public:
     ObjectIdentifier();
-//    ~ObjectIdentifier();
-    void identifyObjects();
+//    ~ObjectIdentifier();    
 
 private:
     ros::Publisher objectPub;
@@ -35,19 +34,20 @@ private:
 
     std::vector<std::string> trainingSampleLabels;
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> trainingSamples;
-    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
-    std::vector<pcl::PointXYZ> objectPositions;
-    std::vector<double> objectRotations;
-    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds;
+//    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+//    std::vector<pcl::PointXYZ> objectPositions;
+//    std::vector<double> objectRotations;
+//    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds;
 
 
+    void identifyObjects(std::vector<pcl::PointXYZ> objectPositions, std::vector<double> objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud);
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void positionCallback(const object_finder::Positions::ConstPtr &msg);
     void cloudPositionCallback(const sensor_msgs::PointCloud2::ConstPtr &cloudMsg, const object_finder::Positions::ConstPtr &posMsg);
-    void extractObjectClouds();
+    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> extractObjectClouds(const std::vector<pcl::PointXYZ> &objectPositions, const std::vector<double> &objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud);
     bool loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples);
     std::string identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object, std::string color);
-    void removeDuplicatePositions();
+    void removeDuplicatePositions(std::vector<pcl::PointXYZ> &objectPositions, std::vector<double> &objectRotations);
     std::string getObjectColor(const pcl::PointCloud<POINTTYPE>::Ptr& object);
     std::string classifyColor(double h, double s, double v);
     void publishFoundObjects(const std::vector<std::string>& colors, const std::vector<std::string>& shapes, const std::vector<pcl::PointXYZ>& positions);
