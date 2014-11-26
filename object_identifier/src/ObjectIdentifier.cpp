@@ -157,11 +157,11 @@ std::vector<pcl::PointCloud<POINTTYPE>::Ptr> ObjectIdentifier::extractObjectClou
     return objectClouds;
 }
 
-bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>& trainingSamples){
+bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labelNames, std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> >& trainingSamples){
 
     //clean output vectors
-    labels = std::vector<std::string>(0);
-    trainingSamples = std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>(0);
+    labelNames = std::vector<std::string>(0);
+    trainingSamples = std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> >(0);
 
     std::string mainDirPath = ros::package::getPath("object_identifier") + "/clouds/";
     std::vector<std::string> samplePaths;
@@ -172,11 +172,13 @@ bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::v
     ROS_INFO("trying to open file %s", libraryFilePath.c_str());
     samplesLibrary.open(libraryFilePath.c_str());
 
+    std::vector<int> labels(0);
+
     if(samplesLibrary.is_open()){
         int nOfLabels;
         samplesLibrary >> nOfLabels;
 
-        std::vector<std::string> labelNames(nOfLabels);
+        labelNames = std::vector<std::string>(nOfLabels);
 
         for(size_t i = 0; i < nOfLabels && !samplesLibrary.eof(); i++){
             int labelIndex;
@@ -197,7 +199,7 @@ bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::v
                 continue;
             }
 
-            labels.push_back(labelNames[labelIndex]);
+            labels.push_back(labelIndex);
             samplePaths.push_back(path);
         }
     }
@@ -208,11 +210,11 @@ bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::v
 
     //print read paths for debugging
     for(size_t i = 0; i < samplePaths.size(); i++){
-        ROS_INFO("%s: %s", labels[i].c_str(), samplePaths[i].c_str());
+        ROS_INFO("%s: %s", labelNames[labels[i]].c_str(), samplePaths[i].c_str());
     }
 
     //read sample clouds
-    trainingSamples = std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr>(samplePaths.size());
+    trainingSamples = std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> >(labels.size());
     for(size_t i = 0; i < samplePaths.size(); i++){
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         std::string completeFilePath = mainDirPath + samplePaths[i];
@@ -220,17 +222,17 @@ bool ObjectIdentifier::loadTrainingData(std::vector<std::string>& labels, std::v
         {
             PCL_ERROR ("Couldn't read file %s\n", samplePaths[i].c_str());
         }
-        trainingSamples[i] = cloud;
+        trainingSamples[labels[i]].push_back(cloud);
     }
     return true;
 }
 
 std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTYPE>::Ptr& object, std::string color){
 
-    if(color.compare("orange") == 0){
+    if(color.compare("Orange") == 0){
         return "patrick";
     }
-    else if(color.compare("purple") == 0){
+    else if(color.compare("Purple") == 0){
         return "cross";
     }
 
@@ -238,7 +240,6 @@ std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTY
 
     //convert to have same pointtype (error otherwise...)
     pcl::PointCloud<pcl::PointXYZ>::Ptr xyzObject(new pcl::PointCloud<pcl::PointXYZ>);
-
     pcl::copyPointCloud(*object, *xyzObject);
 
     pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
@@ -249,16 +250,32 @@ std::string ObjectIdentifier::identifySingleObject(const pcl::PointCloud<POINTTY
     double smallestError = 100;
     int smallestErrorIndex = -1;
 
-    for(size_t i = 0; i < trainingSamples.size() && ros::ok(); i++){
-        icp.setInputSource(trainingSamples[i]);
+//    for(size_t i = 0; i < trainingSamples.size() && ros::ok(); i++){
+//        icp.setInputSource(trainingSamples[i]);
 
-        pcl::PointCloud<pcl::PointXYZ> final;
-        icp.align(final);
-        double error = icp.getFitnessScore();
+//        pcl::PointCloud<pcl::PointXYZ> final;
+//        icp.align(final);
+//        double error = icp.getFitnessScore();
 
-        if(error < smallestError){
-            smallestError = error;
-            smallestErrorIndex = i;
+//        if(error < smallestError){
+//            smallestError = error;
+//            smallestErrorIndex = i;
+//        }
+//    }
+
+    std::vector<int> possibleShapeIndices = getPossibleShapeIndices(color, trainingSampleLabels);
+    for(size_t i = 0; i < possibleShapeIndices.size(); i++){
+        for(size_t j = 0; j < trainingSamples[possibleShapeIndices[i]].size(); j++){
+            icp.setInputSource(trainingSamples[possibleShapeIndices[i]][j]);
+
+            pcl::PointCloud<pcl::PointXYZ> final;
+            icp.align(final);
+            double error = icp.getFitnessScore();
+
+            if(error < smallestError){
+                smallestError = error;
+                smallestErrorIndex = i;
+            }
         }
     }
     if(smallestError > 0.0006){
@@ -366,34 +383,34 @@ std::string ObjectIdentifier::classifyColor(double h, double s, double v){
     }
 
     std::string color;
-    color = "unknown color";
+    color = "Unknown Color";
 
     if(s < 0.1){
-        color = "white";
+        color = "White";
     }
     else if(h <= 20){
         if(s >= 2.0d / 3.0d && v >= 2.0d / 3.0d){
-            color = "orange";
+            color = "Orange";
         }
     }
     else if(h >= 60 && h <= 178){
         if(s >= 0.313 && v >= 0.235){
-            color = "green";
+            color = "Green";
         }
     }
     else if(h >= 180 && h <= 238){
         if(s >= 0.114 && v >= 0.235){
-            color = "blue";
+            color = "Blue";
         }
     }
     else if(h >= 240 && h <= 320){
         if(s >= 0.353 && v >= 0.313){
-            color = "purple";
+            color = "Purple";
         }
     }
     else if(h >= 322 && h <= 358){
         if(s >= 0.196 && v >= 0.196){
-            color = "red";
+            color = "Red";
         }
     }
     return color;
@@ -426,6 +443,38 @@ void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& color
     objectPub.publish(objectsMsg);
 
     return;
+}
+
+std::vector<int> ObjectIdentifier::getPossibleShapeIndices(std::string color, const std::vector<std::string> &shapes){
+
+    std::vector<std::string> possibleShapes;
+    std::vector<int> possibleShapeIndices;
+
+    if(color.compare("Green") == 0){
+        possibleShapes.push_back("Cube");
+        possibleShapes.push_back("Cylinder");
+    }
+    else if(color.compare("Red") == 0){
+        possibleShapes.push_back("Ball");
+        possibleShapes.push_back("Cube");
+    }
+    else if(color.compare("Yellow") == 0){
+        possibleShapes.push_back("Ball");
+        possibleShapes.push_back("Cube");
+    }
+    else if(color.compare("Blue") == 0){
+        possibleShapes.push_back("Cube");
+        possibleShapes.push_back("Triangle");
+    }
+
+    for(size_t i = 0; i < possibleShapes.size(); i++){
+        for(size_t j = 0; j < shapes.size(); j++){
+            if(possibleShapes[i].compare(shapes[j]) == 0){
+                possibleShapeIndices.push_back(j);
+            }
+        }
+    }
+    return possibleShapeIndices;
 }
 
 }//namespace primesense_pkgs
