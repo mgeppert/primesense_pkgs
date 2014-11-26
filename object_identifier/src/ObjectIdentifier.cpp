@@ -69,9 +69,9 @@ void ObjectIdentifier::identifyObjects(std::vector<pcl::PointXYZ> objectPosition
         shapes.push_back(shape);
         positions.push_back(objectPositions[i]);
 
-        std_msgs::String stringMsg;
-        stringMsg.data = "I see a " + color + " " + shape;
-        speakerPub.publish(stringMsg);
+//        std_msgs::String stringMsg;
+//        stringMsg.data = "I see a " + color + " " + shape;
+//        speakerPub.publish(stringMsg);
 
         ROS_INFO("object %lu: %s %s at position (%f, %f)", i, color.c_str(), shape.c_str(), objectPositions[i].x, objectPositions[i].z);
     }
