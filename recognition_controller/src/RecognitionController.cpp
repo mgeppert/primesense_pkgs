@@ -189,6 +189,13 @@ void RecognitionController::addObjectVote(ros::Time timestamp, coordinates2D coo
         }
     }
 
+    //do not vote if the respective object has also been selected somewhere else
+    for(std::list<known_object>::const_iterator it = identified_objects.begin(), end = identified_objects.end(); it != end; it++){
+        if(color.compare(it->color) == 0 && shape.compare(it->shape) == 0){
+            return;
+        }
+    }
+
     //compute global position
     geometry_msgs::Twist globalPose;
     if(!findTimePose(timestamp, globalPose)){
