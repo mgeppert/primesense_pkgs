@@ -272,7 +272,7 @@ bool RecognitionController::findTimePose(ros::Time timestamp, geometry_msgs::Twi
     geometry_msgs::Twist debugDummyMsg;
     debugDummyMsg.linear.x = 0;
     debugDummyMsg.linear.y = 0;
-    debugDummyMsg.angular.z = 0;
+    debugDummyMsg.angular.z = M_PI_2;
     globalPose = debugDummyMsg;
     return true;
     //------end of dummy code for debugging
