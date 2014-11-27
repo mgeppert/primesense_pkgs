@@ -466,6 +466,13 @@ std::vector<int> ObjectIdentifier::getPossibleShapeIndices(std::string color, co
         possibleShapes.push_back("Cube");
         possibleShapes.push_back("Triangle");
     }
+    else {
+        //test all shapes
+        possibleShapes.push_back("Ball");
+        possibleShapes.push_back("Cube");
+        possibleShapes.push_back("Cylinder");
+        possibleShapes.push_back("Triangle");
+    }
 
     for(size_t i = 0; i < possibleShapes.size(); i++){
         for(size_t j = 0; j < shapes.size(); j++){
