@@ -58,7 +58,7 @@ void ObjectIdentifier::identifyObjects(std::vector<pcl::PointXYZ> objectPosition
 
         std::string color = getObjectColor(objectClouds[i]);
 
-        if(color.compare("white") == 0){
+        if(color.compare("White") == 0){
             ROS_ERROR("object color is white");
             continue;
         }
@@ -466,7 +466,7 @@ std::vector<int> ObjectIdentifier::getPossibleShapeIndices(std::string color, co
         possibleShapes.push_back("Cube");
         possibleShapes.push_back("Triangle");
     }
-    else {
+    else if(color.compare("Unknown Color") == 0){
         //test all shapes
         possibleShapes.push_back("Ball");
         possibleShapes.push_back("Cube");
