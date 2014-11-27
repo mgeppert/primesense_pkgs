@@ -37,7 +37,7 @@ void RecognitionController::pcPosCallback(const object_finder::Positions::ConstP
         ros::Time timestamp = msg->header.stamp;
 
         //debug output
-        ROS_INFO("received object at position (%f, %f) from object_finder", coord.x, coord.y);
+//        ROS_INFO("received object at position (%f, %f) from object_finder", coord.x, coord.y);
 
         addObjectPosition(timestamp, coord, angle);
     }
@@ -57,7 +57,7 @@ void RecognitionController::pcObjCallback(const object_identifier::Objects::Cons
         std::string shape = msg->shapes[i].data;
 
         //debug output
-        ROS_INFO("received %s %s at position (%f, %f) from object_identifier", color.c_str(), shape.c_str(), coord.x, coord.y);
+//        ROS_INFO("received %s %s at position (%f, %f) from object_identifier", color.c_str(), shape.c_str(), coord.x, coord.y);
 
         addObjectVote(timestamp, coord, color, shape, false);
     }
@@ -76,7 +76,7 @@ void RecognitionController::ocvCallback(const ocv_msgs::ocv::ConstPtr &msg){
     std::string shape = msg->shape.data;
 
     //debug output
-    ROS_INFO("received %s %s at position (%f, %f) from openCV", color.c_str(), shape.c_str(), coord.x, coord.y);
+//    ROS_INFO("received %s %s at position (%f, %f) from openCV", color.c_str(), shape.c_str(), coord.x, coord.y);
 
     addObjectVote(timestamp, coord, color, shape, true);
 
@@ -128,7 +128,7 @@ bool RecognitionController::addObjectPosition(ros::Time timestamp, RecognitionCo
 
     RecognitionController::coordinates2D globalObjectPosition = computeGlobalPosition(globalPose, coordinates);
 
-    ROS_INFO("adding global position (%f, %f)", globalObjectPosition.x, globalObjectPosition.y);
+//    ROS_INFO("adding global position (%f, %f)", globalObjectPosition.x, globalObjectPosition.y);
 
     for(std::list<known_object>::const_iterator it = identified_objects.begin(), end = identified_objects.end(); it != end; it++){
         if(computePositionDiff(globalObjectPosition, it->coordinates) < ALLOWED_POSITION_DIFFERENCE_M){

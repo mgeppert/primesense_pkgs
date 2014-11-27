@@ -82,13 +82,13 @@ void ObjectIdentifier::identifyObjects(std::vector<pcl::PointXYZ> objectPosition
 
 void ObjectIdentifier::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
     //just for easier debugging
-    ROS_INFO("received cloud (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
+//    ROS_INFO("received cloud (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
     return;
 }
 
 void ObjectIdentifier::positionCallback(const object_finder::Positions::ConstPtr &msg){
     //just for easier debugging
-    ROS_INFO("received positions (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
+//    ROS_INFO("received positions (ts: %d.%d)", msg->header.stamp.sec, msg->header.stamp.nsec);
     return;
 }
 
