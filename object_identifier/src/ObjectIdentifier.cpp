@@ -425,11 +425,11 @@ void ObjectIdentifier::publishFoundObjects(const std::vector<std::string>& color
     for(size_t i = 0; i < colors.size(); i++){
 
         std_msgs::String shapeString;
-        shapeString.data = shapes[i];
+        shapeString.data = shapes[i].compare("UNKNOWN") == 0 ? "Object" : shapes[i];
         objectsMsg.shapes.push_back(shapeString);
 
         std_msgs::String colorString;
-        colorString.data = colors[i];
+        colorString.data = colors[i].compare("Unknown Color") == 0 ? "" : colors[i];
         objectsMsg.colors.push_back(colorString);
 
         geometry_msgs::Point position;
