@@ -20,6 +20,8 @@ RecognitionController::RecognitionController(){
     espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
     evidenceCommandPub = nh.advertise<image_buffer::EvidenceCommand>("/recognition_controller/evidence_command", 1);
 
+    lastPcIdentification = ros::Time::now();
+
     objects_to_identify = std::list<RecognitionController::unknown_object>();
     identified_objects = std::list<RecognitionController::known_object>();
     lastPositions = std::list<RecognitionController::pose>();
@@ -308,21 +310,25 @@ void RecognitionController::updateObjectPosition(RecognitionController::unknown_
 }
 
 void RecognitionController::sendPositionToIdentifyObject(ros::Time timestamp, RecognitionController::coordinates2D relativeObjectPosition, double objectAngle){
-    object_finder::Positions positionMsg;
-    positionMsg.header = std_msgs::Header();
-    positionMsg.header.stamp = timestamp;
 
-    geometry_msgs::Point objectPosition;
-    objectPosition.x = relativeObjectPosition.x;
-    objectPosition.y = 0;
-    objectPosition.z = relativeObjectPosition.y;
+    if(computeTimeDiff(lastPcIdentification, ros::Time::now()) > PC_OBJECT_IDENT_COOLDOWN_S){
+        object_finder::Positions positionMsg;
+        positionMsg.header = std_msgs::Header();
+        positionMsg.header.stamp = timestamp;
 
-    positionMsg.object_positions.push_back(objectPosition);
-    positionMsg.object_angles.push_back(objectAngle);
+        geometry_msgs::Point objectPosition;
+        objectPosition.x = relativeObjectPosition.x;
+        objectPosition.y = 0;
+        objectPosition.z = relativeObjectPosition.y;
 
-//    identObjPub.publish(positionMsg);
-    ROS_INFO("ask for identification of object at (%f, %f)", relativeObjectPosition.x, relativeObjectPosition.y);
-    pcPosPub.publish(positionMsg);
+        positionMsg.object_positions.push_back(objectPosition);
+        positionMsg.object_angles.push_back(objectAngle);
+
+        //    identObjPub.publish(positionMsg);
+        ROS_INFO("ask for identification of object at (%f, %f)", relativeObjectPosition.x, relativeObjectPosition.y);
+        pcPosPub.publish(positionMsg);
+        lastPcIdentification = ros::Time::now();
+    }
     return;
 }
 

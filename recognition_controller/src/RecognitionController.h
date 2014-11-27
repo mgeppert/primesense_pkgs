@@ -14,9 +14,10 @@
 #define ALLOWED_TIME_DIFFERENCE_SEC 0.05
 #define ALLOWED_POSITION_DIFFERENCE_M 0.05
 #define MIN_POINTCLOUD_DISTANCE_M 0.3 //TO CHECK
-#define MAX_POINTCLOUD_DISTANCE_M 0.6 //TO CHECK
-#define MIN_VOTES_FOR_OBJECT 2
+#define MAX_POINTCLOUD_DISTANCE_M 0.5 //TO CHECK
+#define MIN_VOTES_FOR_OBJECT 3
 #define MIN_VOTES_FOR_POSITION 5
+#define PC_OBJECT_IDENT_COOLDOWN_S 2
 
 namespace primesense_pkgs{
 
@@ -67,6 +68,8 @@ private:
     ros::Publisher identObjPub; //identified objects in global space
     ros::Publisher espeakPub; //tell identified object's name
     ros::Publisher evidenceCommandPub; //command to image buffer to send evidence image
+
+    ros::Time lastPcIdentification;
 
     void pcPosCallback(const object_finder::Positions::ConstPtr &msg);
     void pcObjCallback(const object_identifier::Objects::ConstPtr &msg);
