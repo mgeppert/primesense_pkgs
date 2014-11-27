@@ -14,8 +14,8 @@
 #define ALLOWED_TIME_DIFFERENCE_SEC 0.05
 #define ALLOWED_POSITION_DIFFERENCE_M 0.05
 #define MIN_POINTCLOUD_DISTANCE_M 0.3 //TO CHECK
-#define MAX_POINTCLOUD_DISTANCE_M 1.0 //TO CHECK
-#define MIN_VOTES_FOR_OBJECT 5
+#define MAX_POINTCLOUD_DISTANCE_M 0.6 //TO CHECK
+#define MIN_VOTES_FOR_OBJECT 2
 #define MIN_VOTES_FOR_POSITION 5
 
 namespace primesense_pkgs{
@@ -66,6 +66,7 @@ private:
     ros::Publisher pcPosPub; //positions (in robot space) to identify
     ros::Publisher identObjPub; //identified objects in global space
     ros::Publisher espeakPub; //tell identified object's name
+    ros::Publisher evidenceCommandPub; //command to image buffer to send evidence image
 
     void pcPosCallback(const object_finder::Positions::ConstPtr &msg);
     void pcObjCallback(const object_identifier::Objects::ConstPtr &msg);
@@ -78,8 +79,8 @@ private:
 
     bool addObjectPosition(ros::Time timestamp, coordinates2D coordinates, double angle);
     void addObjectVote(ros::Time timestamp, coordinates2D coordinates, std::string color, std::string shape, bool voteForPosition = false);
-    void voteForObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape);
-    void decideOnObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape);
+    void voteForObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape, ros::Time timestamp);
+    void decideOnObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape, ros::Time timestamp);
     bool findTimePose(ros::Time timestamp, geometry_msgs::Twist &globalPose);
     coordinates2D computeGlobalPosition(geometry_msgs::Twist globalRobotPose, coordinates2D relativeObjectPosition);
     bool timeMatch(const ros::Time &t1, const ros::Time &t2);

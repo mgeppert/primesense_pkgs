@@ -1,5 +1,7 @@
 #include "RecognitionController.h"
 
+#include <image_buffer/EvidenceCommand.h>
+
 #include <cmath>
 
 namespace primesense_pkgs{
@@ -7,7 +9,6 @@ namespace primesense_pkgs{
 RecognitionController::RecognitionController(){
     ros::NodeHandle nh;
 
-    //TODO: add subscribers + publishers
     pcPosSub = nh.subscribe("/object_finder/positions", 1, &RecognitionController::pcPosCallback, this);
     pcObjSub = nh.subscribe("/object_identifier/objects", 1, &RecognitionController::pcObjCallback, this);
     ocvSub = nh.subscribe("/ocvrec/data", 1, &RecognitionController::ocvCallback, this);
@@ -17,6 +18,7 @@ RecognitionController::RecognitionController(){
     //TODO: change this after debugging
     identObjPub = nh.advertise<std_msgs::String>("/recognition_controller/identified_objects", 1);
     espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
+    evidenceCommandPub = nh.advertise<image_buffer::EvidenceCommand>("/recognition_controller/evidence_command", 1);
 
     objects_to_identify = std::list<RecognitionController::unknown_object>();
     identified_objects = std::list<RecognitionController::known_object>();
@@ -208,13 +210,13 @@ void RecognitionController::addObjectVote(ros::Time timestamp, coordinates2D coo
     for(std::list<RecognitionController::unknown_object>::iterator it = objects_to_identify.begin(), end = objects_to_identify.end(); it != end; it++){
         if(computePositionDiff(globalObjectPosition, it->coordinates) < ALLOWED_POSITION_DIFFERENCE_M){
             //object is the same
-            voteForObject(it, color, shape);
+            voteForObject(it, color, shape, timestamp);
             return;
         }
     }
 }
 
-void RecognitionController::voteForObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape){
+void RecognitionController::voteForObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape, ros::Time timestamp){
     for(std::list<object_vote>::iterator it = objectIt->votes.begin(), end = objectIt->votes.end(); it != end; it++){
         if(color.compare(it->color) == 0 && shape.compare(it->shape) == 0){
             //found the same object
@@ -222,7 +224,7 @@ void RecognitionController::voteForObject(std::list<unknown_object>::iterator ob
 
             if(it->votes >= MIN_VOTES_FOR_OBJECT){
                 //high probability for this object -> decide on this
-                decideOnObject(objectIt, color, shape);
+                decideOnObject(objectIt, color, shape, timestamp);
                 return;
             }
         }
@@ -237,13 +239,14 @@ void RecognitionController::voteForObject(std::list<unknown_object>::iterator ob
     return;
 }
 
-void RecognitionController::decideOnObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape){
+void RecognitionController::decideOnObject(std::list<unknown_object>::iterator objectIt, std::string color, std::string shape, ros::Time timestamp){
     //add to identified objects list
     known_object newKnownObect;
     newKnownObect.color = color;
     newKnownObect.shape = shape;
     newKnownObect.coordinates.x = objectIt->coordinates.x;
-    newKnownObect.coordinates.y = objectIt->coordinates.y;
+    newKnownObect.coordinates.y = objectIt->coordinates.y;    
+    identified_objects.push_back(newKnownObect);
 
     //remove from unknown objects list
     objects_to_identify.erase(objectIt);
@@ -256,6 +259,12 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
     std_msgs::String espeakMsg;
     espeakMsg.data = ("I see a " + color + " " + shape + ".").c_str();
     espeakPub.publish(espeakMsg);
+
+    //send evidence command to image buffer
+    image_buffer::EvidenceCommand command;
+    command.header = std_msgs::Header();
+    command.header.stamp = timestamp;
+    command.object_name.data = (color + " " + shape).c_str();
 
     return;
 }
