@@ -1,17 +1,19 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(object_finder)
+project(image_buffer)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  pcl_conversions
-  pcl_ros
   roscpp
   sensor_msgs
-  visualization_msgs
+  std_msgs
+  cv_bridge
+  image_transport
   message_generation
 )
+
+find_package( OpenCV REQUIRED )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -49,7 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  Positions.msg
+  EvidenceCommand.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -69,7 +71,7 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  geometry_msgs
+  std_msgs
 )
 
 ###################################
@@ -83,8 +85,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES object_finder
-#  CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
+#  LIBRARIES ras_lab1_motor_controller
+#  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
   CATKIN_DEPENDS message_runtime
 )
@@ -95,27 +97,28 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(object_finder
-#   src/${PROJECT_NAME}/object_finder.cpp
+# add_library(ras_lab1_motor_controller
+#   src/${PROJECT_NAME}/motor_controller.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(object_finder_node src/object_finder_node.cpp src/ObjectFinder.cpp)
+add_executable(image_buffer_node src/image_buffer_node.cpp src/ImageBuffer.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(object_finder_node object_finder_generate_messages_cpp)
+add_dependencies(image_buffer_node image_buffer_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(object_finder_node
-  ${catkin_LIBRARIES}
-)
+ target_link_libraries(image_buffer_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+ )
 
 #############
 ## Install ##
@@ -132,7 +135,7 @@ target_link_libraries(object_finder_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS object_finder object_finder_node
+# install(TARGETS ras_lab1_motor_controller ras_lab1_motor_controller_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -157,10 +160,11 @@ target_link_libraries(object_finder_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_object_finder.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ras_lab1_motor_controller.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+

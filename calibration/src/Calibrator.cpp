@@ -1,5 +1,7 @@
 #include "Calibrator.h"
 
+//PCL
+#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/crop_box.h>
 #include <pcl/segmentation/sac_segmentation.h>
 
@@ -15,26 +17,10 @@ Calibrator::Calibrator(){
 
     cloud = PointCloud<POINTTYPE>::Ptr(new PointCloud<POINTTYPE>);
 
-//    ROS_INFO("constructed");
-
     return;
 }
 
 bool Calibrator::calibrate(){
-
-//    ROS_INFO("points before cropbox: %lu", cloud->points.size());
-
-//    PointCloud<POINTTYPE>::Ptr croppedCloud = cropBox(cloud);
-//    ROS_INFO("cropped (%lu points left)", croppedCloud->points.size());
-//    pcl::ModelCoefficients::Ptr coefficients = findGroundPlane(croppedCloud);
-
-//    if(coefficients->values.size() == 0){
-//        return false;
-//    }
-
-//    ROS_INFO("values size: %lu", coefficients->values.size());
-
-//    ROS_INFO("extracted coefficients: %f, %f, %f, %f", coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]);
 
     int requiredClouds = 50;
 
@@ -76,10 +62,8 @@ bool Calibrator::calibrate(){
             allAngles[numVals][i] = angles[i];
         }
 
-//        averageHeight += -coefficients->values[1]*coefficients->values[3];
-        averageHeight += (double) -coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
-//        allHeights[numVals] = -coefficients->values[1]*coefficients->values[3];
-        allHeights[numVals] = (double) -coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
+        averageHeight += (double) coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
+        allHeights[numVals] = (double) coefficients->values[3]/ (double) coefficients->values[2] * std::sin(angles[0]);
 
         numVals++;
 
@@ -136,8 +120,6 @@ PointCloud<POINTTYPE>::Ptr Calibrator::cropBox(PointCloud<POINTTYPE>::Ptr pc){
 
 pcl::ModelCoefficients::Ptr Calibrator::findGroundPlane(PointCloud<POINTTYPE>::Ptr pc){
 
-//    return pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients); //CHANGE!!!
-
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
@@ -147,12 +129,10 @@ pcl::ModelCoefficients::Ptr Calibrator::findGroundPlane(PointCloud<POINTTYPE>::P
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
     seg.setMaxIterations(100);
-    seg.setDistanceThreshold (0.001);
+    seg.setDistanceThreshold (0.003);
 
     seg.setInputCloud (pc);
     seg.segment (*inliers, *coefficients);
-
-//    ROS_INFO("size values in fun: %lu", coefficients->values.size());
 
     return coefficients;
 }
@@ -162,8 +142,6 @@ std::vector<double> Calibrator::computeAngles(std::vector<float> groundPlaneCoef
     std::vector<double> angles(3);
 
     //rotation around x axis
-//    angles[0] = M_PI_2 - std::atan(-groundPlaneCoefficients[2] / groundPlaneCoefficients[1]);
-//    angles[0] = std::atan(-groundPlaneCoefficients[2] / groundPlaneCoefficients[1]);
     angles[0] = -std::atan((double) groundPlaneCoefficients[2] / (double) groundPlaneCoefficients[1]);
     angles[1] = 0; //rotation around y axis
     angles[2] = 0; //rotation around z axis

@@ -3,27 +3,23 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-//#include <std_msgs/Time.h>
 
 //PCL
 #include <pcl/filters/crop_box.h>
-//#include <pcl/octree/octree.h>
-//#include <pcl/octree/octree_pointcloud_changedetector.h>
 
 #include <vector>
 
-#define POINTTYPE pcl::PointXYZRGB
+#define POINTTYPE pcl::PointXYZ
 
 namespace primesense_pkgs{
-
-//using pcl::PointCloud;
 
 class ObjectFinder{
 
 public:
     ObjectFinder();
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void findObjects();
+//    static bool positionCompare(pcl::PointXYZ lhs, pcl::PointXYZ rhs);
+
 
 private:
     ros::Subscriber sub;
@@ -33,25 +29,29 @@ private:
     ros::Publisher differencesPub;
     ros::Publisher markerPub;
 
-    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
-    ros::Time currentCloudTimeStamp;
+//    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
+//    ros::Time currentCloudTimeStamp;
 
     pcl::CropBox<POINTTYPE> lowerBox;
     pcl::CropBox<POINTTYPE> upperBox;
     pcl::CropBox<POINTTYPE> smallBox;
     pcl::CropBox<POINTTYPE> triangleBox;
-//    pcl::octree::OctreePointCloudChangeDetector<POINTTYPE> octree;
 
+    struct objectPose{
+        pcl::PointXYZ position;
+        double angle;
+    };
+
+    void findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud, ros::Time currentCloudTimeStamp);
+    pcl::PointCloud<POINTTYPE>::Ptr downSample(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropLowerBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropTriangleBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
-//    pcl::PointCloud<POINTTYPE>::Ptr removeGroundPlane(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr projectToZeroPlane(pcl::PointCloud<POINTTYPE>::Ptr pc);
-//    std::vector<int> getDifferenceIndices(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
     pcl::PointCloud<POINTTYPE>::Ptr getDifference(const pcl::PointCloud<POINTTYPE>::Ptr& upc, const pcl::PointCloud<POINTTYPE>::Ptr& lpc);
-//    pcl::PointCloud<POINTTYPE>::Ptr getDifferenceCloud(const pcl::PointCloud<POINTTYPE>::Ptr& lpc, const std::vector<int>& differenceIndices);
-    std::vector<pcl::PointXYZ> getObjectPositions(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
-    void sendMarker(pcl::PointXYZ point, int id);
+    std::vector<ObjectFinder::objectPose> getObjectPoses(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
+    static bool positionCompare(const ObjectFinder::objectPose& lhs, const ObjectFinder::objectPose& rhs);
+    void sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp);
 };
 }//namespace primesense_pkgs
 

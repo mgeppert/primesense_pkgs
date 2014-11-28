@@ -1,16 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(object_finder)
+project(recognition_controller)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  pcl_conversions
-  pcl_ros
   roscpp
-  sensor_msgs
-  visualization_msgs
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,10 +42,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Positions.msg
-)
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,10 +63,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -83,10 +79,9 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES object_finder
-#  CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
+#  LIBRARIES recognition_controller
+#  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
-  CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -101,19 +96,19 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(object_finder
-#   src/${PROJECT_NAME}/object_finder.cpp
+# add_library(recognition_controller
+#   src/${PROJECT_NAME}/recognition_controller.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(object_finder_node src/object_finder_node.cpp src/ObjectFinder.cpp)
+add_executable(recognition_controller_node src/recognition_controller_node.cpp src/RecognitionController.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(object_finder_node object_finder_generate_messages_cpp)
+add_dependencies(recognition_controller_node recognition_controller_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(object_finder_node
+target_link_libraries(recognition_controller_node
   ${catkin_LIBRARIES}
 )
 
@@ -132,7 +127,7 @@ target_link_libraries(object_finder_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS object_finder object_finder_node
+# install(TARGETS recognition_controller recognition_controller_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -157,7 +152,7 @@ target_link_libraries(object_finder_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_object_finder.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_recognition_controller.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
