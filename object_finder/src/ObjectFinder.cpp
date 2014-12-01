@@ -1,6 +1,7 @@
 #include "ObjectFinder.h"
 
 #include <object_finder/Positions.h>
+#include <object_finder/WallPoints.h>
 #include <visualization_msgs/Marker.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -26,6 +27,7 @@ ObjectFinder::ObjectFinder(){
     lowerProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/lower_projection", 1);
     differencesPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/differences", 1);
     markerPub = nh.advertise<visualization_msgs::Marker>("/object_finder/marker", 1);
+    wallPointsPub = nh.advertise<object_finder::WallPoints>("/object_finder/wallpoints", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
     lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
@@ -78,6 +80,8 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     sensor_msgs::PointCloud2 upperProjectionMsg;
     pcl::toROSMsg(*upperProjection, upperProjectionMsg);
     upperProjectionPub.publish(upperProjectionMsg);
+
+    sendWallPoints(upperProjection, currentCloudTimeStamp);
 
     sensor_msgs::PointCloud2 lowerProjectionMsg;
     pcl::toROSMsg(*lowerProjection, lowerProjectionMsg);
@@ -308,6 +312,31 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
     marker.lifetime = ros::Duration();
 
     markerPub.publish(marker);
+}
+
+void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros::Time timestamp){
+
+    //sample down
+    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+    grid.setLeafSize(0.01, 0.01, 0.1);
+    grid.setInputCloud(pc);
+
+    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
+    grid.filter(*dsCloud);
+
+    //create message
+    object_finder::WallPoints msg;
+    msg.header.stamp = timestamp;
+    msg.points.resize(dsCloud->points.size());
+
+    for(size_t i = 0; i < dsCloud->points.size(); i++){
+        msg.points[i].x = dsCloud->points[i].x;
+        msg.points[i].y = dsCloud->points[i].z;
+        msg.points[i].z = 0;
+    }
+
+    wallPointsPub.publish(msg);
+    return;
 }
 
 } //namespace primesense_pkgs

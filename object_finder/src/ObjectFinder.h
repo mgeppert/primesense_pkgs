@@ -28,6 +28,7 @@ private:
     ros::Publisher lowerProjectionPub;
     ros::Publisher differencesPub;
     ros::Publisher markerPub;
+    ros::Publisher wallPointsPub;
 
 //    pcl::PointCloud<POINTTYPE>::Ptr inputCloud;
 //    ros::Time currentCloudTimeStamp;
@@ -52,6 +53,7 @@ private:
     std::vector<ObjectFinder::objectPose> getObjectPoses(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     static bool positionCompare(const ObjectFinder::objectPose& lhs, const ObjectFinder::objectPose& rhs);
     void sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp);
+    void sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr& pc, ros::Time timestamp);
 };
 }//namespace primesense_pkgs
 
