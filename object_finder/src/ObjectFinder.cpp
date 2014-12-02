@@ -77,6 +77,8 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
 
+    sendWallPoints(upperProjection, currentCloudTimeStamp);
+
     sensor_msgs::PointCloud2 upperProjectionMsg;
     pcl::toROSMsg(*upperProjection, upperProjectionMsg);
     upperProjectionPub.publish(upperProjectionMsg);
@@ -87,8 +89,6 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
 
     upperProjection = cropTriangleBox(upperProjection);
     lowerProjection = cropTriangleBox(lowerProjection);
-
-    sendWallPoints(upperProjection, currentCloudTimeStamp);
 
     ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
 
@@ -316,10 +316,19 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
 
 void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros::Time timestamp){
 
+    //cut out box
+    pcl::CropBox<POINTTYPE> box;
+    box.setMin(Eigen::Vector4f(-0.15, -1, 0.1, 1.0));
+    box.setMax(Eigen::Vector4f(0.15, 1, 0.4, 1.0));
+
+    pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
+    box.setInputCloud(pc);
+    box.filter(*boxCloud);
+
     //sample down
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
     grid.setLeafSize(0.01, 0.01, 0.1);
-    grid.setInputCloud(pc);
+    grid.setInputCloud(boxCloud);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
     grid.filter(*dsCloud);
