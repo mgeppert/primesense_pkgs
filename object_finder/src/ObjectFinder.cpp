@@ -81,14 +81,14 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     pcl::toROSMsg(*upperProjection, upperProjectionMsg);
     upperProjectionPub.publish(upperProjectionMsg);
 
-    sendWallPoints(upperProjection, currentCloudTimeStamp);
-
     sensor_msgs::PointCloud2 lowerProjectionMsg;
     pcl::toROSMsg(*lowerProjection, lowerProjectionMsg);
     lowerProjectionPub.publish(lowerProjectionMsg);
 
     upperProjection = cropTriangleBox(upperProjection);
     lowerProjection = cropTriangleBox(lowerProjection);
+
+    sendWallPoints(upperProjection, currentCloudTimeStamp);
 
     ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
 
