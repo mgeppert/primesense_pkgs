@@ -1,6 +1,7 @@
 #include "RecognitionController.h"
 
 #include <image_buffer/EvidenceCommand.h>
+#include <recognition_controller/ObjectPosition.h>
 
 #include <cmath>
 
@@ -16,7 +17,7 @@ RecognitionController::RecognitionController(){
 
     pcPosPub = nh.advertise<object_finder::Positions>("/object_identifier/positions_in", 1);
     //TODO: change this after debugging
-    identObjPub = nh.advertise<std_msgs::String>("/recognition_controller/identified_objects", 1);
+    identObjPub = nh.advertise<recognition_controller::ObjectPosition>("/recognition_controller/identified_objects", 1);
     espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
     evidenceCommandPub = nh.advertise<image_buffer::EvidenceCommand>("/recognition_controller/evidence_command", 1);
 
@@ -255,7 +256,13 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
 
     ROS_INFO("identified object: %s %s at position (%f, %f)", color.c_str(), shape.c_str(), newKnownObect.coordinates.x, newKnownObect.coordinates.y);
 
-    //TODO send message for map
+    //send message for map
+    recognition_controller::ObjectPosition mapMsg;
+    mapMsg.name = newKnownObect.color + " " + newKnownObect.shape;
+    mapMsg.position.x = newKnownObect.coordinates.x;
+    mapMsg.position.y = newKnownObect.coordinates.y;
+
+    identObjPub.publish(mapMsg);
 
     //send message to espeak
     std_msgs::String espeakMsg;
@@ -326,7 +333,6 @@ void RecognitionController::sendPositionToIdentifyObject(ros::Time timestamp, Re
         positionMsg.object_positions.push_back(objectPosition);
         positionMsg.object_angles.push_back(objectAngle);
 
-        //    identObjPub.publish(positionMsg);
         ROS_INFO("ask for identification of object at (%f, %f)", relativeObjectPosition.x, relativeObjectPosition.y);
         pcPosPub.publish(positionMsg);
         lastPcIdentification = ros::Time::now();
