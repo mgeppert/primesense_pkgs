@@ -39,26 +39,32 @@ void ImageBuffer::evidenceCommandCallback(const image_buffer::EvidenceCommand::C
     evidence.object_id = msg->object_name.data;
 
     //find best picture
-    double smallestDiff = 100;
+    if (bufferList.empty()) {
+			evidencePub.publish(evidence);
+			return;
+		}
+    
+    double smallestDiff = 10000000.0;
     std::list<sensor_msgs::Image>::iterator bestIt;
-    for(std::list<sensor_msgs::Image>::iterator it = bufferList.begin(), end = bufferList.end(); it != end; it++){
+    for(std::list<sensor_msgs::Image>::iterator it = bufferList.begin(); it != bufferList.end(); ++it){
         double currDiff = computeTimeDiff(it->header.stamp, msg->header.stamp);
         if(currDiff < smallestDiff){
             smallestDiff = currDiff;
             bestIt = it;
         }
-        //else break??
+        else {
+        	//break;
+        }
     }
 
     evidence.image_evidence = *bestIt;
-
     evidencePub.publish(evidence);
     return;
 }
 
 double ImageBuffer::computeTimeDiff(const ros::Time &t1, const ros::Time &t2){
     int nSecDiff = std::abs(t1.nsec - t2.nsec);
-    int secDiff = t1.sec - t2.sec;
+    int secDiff = std::abs(t1.sec - t2.sec);
     double diff = (double) secDiff + (((double) nSecDiff) / 1e-9);
 
     return diff;

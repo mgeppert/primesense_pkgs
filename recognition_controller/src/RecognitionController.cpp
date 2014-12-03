@@ -267,7 +267,9 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
     command.header = std_msgs::Header();
     command.header.stamp = timestamp;
     command.object_name.data = (color + " " + shape).c_str();
-
+    ROS_ERROR("Object ID = %s",command.object_name.data.c_str());
+		evidenceCommandPub.publish(command);
+		ROS_ERROR("after publish");
     return;
 }
 
