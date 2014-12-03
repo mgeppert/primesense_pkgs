@@ -319,28 +319,28 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
     //cut out box
     pcl::CropBox<POINTTYPE> box;
     box.setMin(Eigen::Vector4f(-0.15, -1, 0.1, 1.0));
-    box.setMax(Eigen::Vector4f(0.15, 1, 0.4, 1.0));
+    box.setMax(Eigen::Vector4f(0.15, 1, 0.5, 1.0));
 
     pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
     box.setInputCloud(pc);
     box.filter(*boxCloud);
 
-    //sample down
-    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-    grid.setLeafSize(0.01, 0.01, 0.1);
-    grid.setInputCloud(boxCloud);
+//    //sample down
+//    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+//    grid.setLeafSize(0.01, 0.01, 0.1);
+//    grid.setInputCloud(boxCloud);
 
-    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
-    grid.filter(*dsCloud);
+//    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
+//    grid.filter(*dsCloud);
 
     //create message
     object_finder::WallPoints msg;
     msg.header.stamp = timestamp;
-    msg.points.resize(dsCloud->points.size());
+    msg.points.resize(boxCloud->points.size());
 
-    for(size_t i = 0; i < dsCloud->points.size(); i++){
-        msg.points[i].x = dsCloud->points[i].x;
-        msg.points[i].y = dsCloud->points[i].z;
+    for(size_t i = 0; i < boxCloud->points.size(); i++){
+        msg.points[i].x = boxCloud->points[i].x;
+        msg.points[i].y = boxCloud->points[i].z;
         msg.points[i].z = 0;
     }
 
