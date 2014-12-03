@@ -325,22 +325,22 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
     box.setInputCloud(pc);
     box.filter(*boxCloud);
 
-//    //sample down
-//    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-//    grid.setLeafSize(0.01, 0.01, 0.1);
-//    grid.setInputCloud(boxCloud);
+    //sample down
+    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+    grid.setLeafSize(0.01, 0.01, 100);
+    grid.setInputCloud(boxCloud);
 
-//    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
-//    grid.filter(*dsCloud);
+    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
+    grid.filter(*dsCloud);
 
     //create message
     object_finder::WallPoints msg;
     msg.header.stamp = timestamp;
-    msg.points.resize(boxCloud->points.size());
+    msg.points.resize(dsCloud->points.size());
 
-    for(size_t i = 0; i < boxCloud->points.size(); i++){
-        msg.points[i].x = boxCloud->points[i].x;
-        msg.points[i].y = boxCloud->points[i].z;
+    for(size_t i = 0; i < dsCloud->points.size(); i++){
+        msg.points[i].x = dsCloud->points[i].x;
+        msg.points[i].y = dsCloud->points[i].z;
         msg.points[i].z = 0;
     }
 
