@@ -13,7 +13,7 @@ RecognitionController::RecognitionController(){
     pcPosSub = nh.subscribe("/object_finder/positions", 1, &RecognitionController::pcPosCallback, this);
     pcObjSub = nh.subscribe("/object_identifier/objects", 1, &RecognitionController::pcObjCallback, this);
     ocvSub = nh.subscribe("/ocvrec/data", 1, &RecognitionController::ocvCallback, this);
-    poseSub = nh.subscribe("/posOri/Twist", 1, &RecognitionController::globalPoseCallback, this);
+    poseSub = nh.subscribe("/posori/Twist", 1, &RecognitionController::globalPoseCallback, this);
 
     pcPosPub = nh.advertise<object_finder::Positions>("/object_identifier/positions_in", 1);
     //TODO: change this after debugging
