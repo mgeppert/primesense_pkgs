@@ -74,10 +74,10 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
 
     ROS_INFO("#points: upper: %lu, lower: %lu", upperCloud->points.size(), lowerCloud->points.size());
 
+    sendWallPoints(upperCloud, currentCloudTimeStamp);
+
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
-
-    sendWallPoints(upperProjection, currentCloudTimeStamp);
 
     sensor_msgs::PointCloud2 upperProjectionMsg;
     pcl::toROSMsg(*upperProjection, upperProjectionMsg);
