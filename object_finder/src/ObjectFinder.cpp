@@ -127,7 +127,7 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::downSample(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
 
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-    grid.setLeafSize(0.002, 0.002, 0.002);
+    grid.setLeafSize(0.004, 0.004, 0.004);
     grid.setInputCloud(pc);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
@@ -209,7 +209,7 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
     ec.setClusterTolerance (0.02); // 2cm
-    ec.setMinClusterSize (75);
+    ec.setMinClusterSize (75); //might have to be adjusted since the resolution of the voxel grid changed
     ec.setMaxClusterSize (5000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
@@ -327,7 +327,7 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
 
     //sample down
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-    grid.setLeafSize(0.01, 0.01, 100);
+    grid.setLeafSize(0.01, 100, 0.01);
     grid.setInputCloud(boxCloud);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
