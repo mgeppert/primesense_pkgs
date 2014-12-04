@@ -16,7 +16,6 @@ RecognitionController::RecognitionController(){
     poseSub = nh.subscribe("/posori/Twist", 1, &RecognitionController::globalPoseCallback, this);
 
     pcPosPub = nh.advertise<object_finder::Positions>("/object_identifier/positions_in", 1);
-    //TODO: change this after debugging
     identObjPub = nh.advertise<recognition_controller::ObjectPosition>("/recognition_controller/identified_objects", 1);
     espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
     evidenceCommandPub = nh.advertise<image_buffer::EvidenceCommand>("/recognition_controller/evidence_command", 1);
