@@ -14,8 +14,6 @@ int main(int argc, char** argv){
 		
 		ros::spinOnce();
 		
-		buffer.buf();
-		
 		loop_rate.sleep();
 	}
 	return 0;

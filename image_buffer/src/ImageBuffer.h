@@ -15,7 +15,6 @@ class ImageBuffer{
 
 public:
     ImageBuffer();
-    void buf();
 
 private:
     ros::Subscriber imageSub;
