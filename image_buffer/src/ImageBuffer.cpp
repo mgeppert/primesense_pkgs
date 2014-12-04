@@ -44,8 +44,9 @@ void ImageBuffer::evidenceCommandCallback(const image_buffer::EvidenceCommand::C
 			return;
 		}
     
-    double smallestDiff = 10000000.0;
+    double smallestDiff = 1.0;
     std::list<sensor_msgs::Image>::iterator bestIt;
+    bestIt = bufferList.end();
     for(std::list<sensor_msgs::Image>::iterator it = bufferList.begin(); it != bufferList.end(); ++it){
         double currDiff = computeTimeDiff(it->header.stamp, msg->header.stamp);
         if(currDiff < smallestDiff){
@@ -56,9 +57,12 @@ void ImageBuffer::evidenceCommandCallback(const image_buffer::EvidenceCommand::C
         	//break;
         }
     }
-
+    
+    if(bestIt != bufferList.end()){
     evidence.image_evidence = *bestIt;
     evidencePub.publish(evidence);
+    }
+    
     return;
 }
 
