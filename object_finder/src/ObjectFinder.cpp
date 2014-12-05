@@ -315,13 +315,6 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
 }
 
 void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros::Time timestamp){
-
-    ROS_INFO("points in 'wall cloud': %lu", pc->points.size());
-    //abort if too few points (likely only noise)
-    if(pc->points.size() < 20){
-        return;
-    }
-
     //cut out box
     pcl::CropBox<POINTTYPE> box;
     box.setMin(Eigen::Vector4f(-0.15, 0, 0.1, 1.0));
@@ -330,6 +323,12 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
     pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
     box.setInputCloud(pc);
     box.filter(*boxCloud);
+
+    ROS_INFO("points in 'wall cloud': %lu", boxCloud->points.size());
+    //abort if too few points (likely only noise)
+    if(boxCloud->points.size() < 20){
+        return;
+    }
 
     //sample down
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
