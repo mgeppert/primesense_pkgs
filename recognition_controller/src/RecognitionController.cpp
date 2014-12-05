@@ -85,15 +85,15 @@ void RecognitionController::ocvCallback(const ocv_msgs::ocv::ConstPtr &msg){
     return;
 }
 
-void RecognitionController::globalPoseCallback(const geometry_msgs::Twist::ConstPtr &msg){
-    ros::Time stamp = ros::Time::now();
+void RecognitionController::globalPoseCallback(const geometry_msgs::TwistStamped::ConstPtr &msg){
+//    ros::Time stamp = ros::Time::now();
     RecognitionController::pose pos;
-    pos.stamp = stamp;
-    pos.pose = *msg;
+    pos.stamp = msg->header.stamp;
+    pos.pose = msg->twist;
 
     lastPositions.push_front(pos);
 
-    while(positionTooOld(lastPositions.back())){
+    while(!lastPositions.empty() && positionTooOld(lastPositions.back())){
         lastPositions.pop_back();
     }
     return;
@@ -288,12 +288,12 @@ bool RecognitionController::findTimePose(ros::Time timestamp, geometry_msgs::Twi
     }
 
     //------beginning of dummy code for debugging without pose messages
-    geometry_msgs::Twist debugDummyMsg;
-    debugDummyMsg.linear.x = 0;
-    debugDummyMsg.linear.y = 0;
-    debugDummyMsg.angular.z = M_PI_2;
-    globalPose = debugDummyMsg;
-    return true;
+//    geometry_msgs::Twist debugDummyMsg;
+//    debugDummyMsg.linear.x = 0;
+//    debugDummyMsg.linear.y = 0;
+//    debugDummyMsg.angular.z = M_PI_2;
+//    globalPose = debugDummyMsg;
+//    return true;
     //------end of dummy code for debugging
 
     return false;

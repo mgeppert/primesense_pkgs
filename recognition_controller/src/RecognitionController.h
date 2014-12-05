@@ -5,13 +5,13 @@
 
 #include <object_finder/Positions.h>
 #include <object_identifier/Objects.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <ocv_msgs/ocv.h>
 
 #include <list>
 
 #define OBSERVED_TIME_INTERVAL_SEC 5
-#define ALLOWED_TIME_DIFFERENCE_SEC 0.05
+#define ALLOWED_TIME_DIFFERENCE_SEC 0.1
 #define ALLOWED_POSITION_DIFFERENCE_M 0.05
 #define MIN_POINTCLOUD_DISTANCE_M 0.3 //TO CHECK
 #define MAX_POINTCLOUD_DISTANCE_M 0.5 //TO CHECK
@@ -74,7 +74,7 @@ private:
     void pcPosCallback(const object_finder::Positions::ConstPtr &msg);
     void pcObjCallback(const object_identifier::Objects::ConstPtr &msg);
     void ocvCallback(const ocv_msgs::ocv::ConstPtr &msg); //TODO: add argument
-    void globalPoseCallback(const geometry_msgs::Twist::ConstPtr &msg);
+    void globalPoseCallback(const geometry_msgs::TwistStamped::ConstPtr &msg);
 
     bool positionTooOld(const RecognitionController::pose &pos);
     double computeTimeDiff(const ros::Time &t1, const ros::Time &t2);
