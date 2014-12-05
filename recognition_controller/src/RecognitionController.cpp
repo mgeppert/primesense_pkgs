@@ -301,8 +301,8 @@ bool RecognitionController::findTimePose(ros::Time timestamp, geometry_msgs::Twi
 
 RecognitionController::coordinates2D RecognitionController::computeGlobalPosition(geometry_msgs::Twist globalRobotPose, coordinates2D relativeObjectPosition){
     RecognitionController::coordinates2D globalObjectPosition;
-    globalObjectPosition.x = globalRobotPose.linear.x + std::cos(globalRobotPose.angular.z)*relativeObjectPosition.y + std::sin(globalRobotPose.angular.z)*relativeObjectPosition.x;
-    globalObjectPosition.y = globalRobotPose.linear.y + std::sin(globalRobotPose.angular.z)*relativeObjectPosition.y - std::cos(globalRobotPose.angular.z)*relativeObjectPosition.x;
+    globalObjectPosition.x = globalRobotPose.linear.x - (std::sin(globalRobotPose.angular.z)*relativeObjectPosition.x) - (std::cos(globalRobotPose.angular.z)*relativeObjectPosition.y);
+    globalObjectPosition.y = globalRobotPose.linear.y + (std::cos(globalRobotPose.angular.z)*relativeObjectPosition.x) - (std::sin(globalRobotPose.angular.z)*relativeObjectPosition.y);
     return globalObjectPosition;
 }
 

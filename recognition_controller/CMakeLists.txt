@@ -108,6 +108,7 @@ add_executable(recognition_controller_node src/recognition_controller_node.cpp s
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(recognition_controller_node recognition_controller_generate_messages_cpp)
+add_dependencies(recognition_controller_node object_finder_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(recognition_controller_node
