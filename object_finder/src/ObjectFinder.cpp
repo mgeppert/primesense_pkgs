@@ -79,9 +79,9 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
 
-    sensor_msgs::PointCloud2 upperProjectionMsg;
-    pcl::toROSMsg(*upperProjection, upperProjectionMsg);
-    upperProjectionPub.publish(upperProjectionMsg);
+//    sensor_msgs::PointCloud2 upperProjectionMsg;
+//    pcl::toROSMsg(*upperProjection, upperProjectionMsg);
+//    upperProjectionPub.publish(upperProjectionMsg);
 
     sensor_msgs::PointCloud2 lowerProjectionMsg;
     pcl::toROSMsg(*lowerProjection, lowerProjectionMsg);
@@ -316,9 +316,15 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
 
 void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros::Time timestamp){
 
+    ROS_INFO("points in 'wall cloud': %lu", pc->points.size());
+    //abort if too few points (likely only noise)
+    if(pc->points.size() < 20){
+        return;
+    }
+
     //cut out box
     pcl::CropBox<POINTTYPE> box;
-    box.setMin(Eigen::Vector4f(-0.15, -1, 0.1, 1.0));
+    box.setMin(Eigen::Vector4f(-0.15, 0, 0.1, 1.0));
     box.setMax(Eigen::Vector4f(0.15, 1, 0.5, 1.0));
 
     pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
@@ -332,6 +338,10 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
     grid.filter(*dsCloud);
+
+    sensor_msgs::PointCloud2 upperProjectionMsg;
+    pcl::toROSMsg(*dsCloud, upperProjectionMsg);
+    upperProjectionPub.publish(upperProjectionMsg);
 
     //create message
     object_finder::WallPoints msg;
