@@ -8,13 +8,11 @@ int main(int argc, char** argv){
 	
 	primesense_pkgs::ImageBuffer buffer;
 	
-	ros::Rate loop_rate(3);
+	ros::Rate loop_rate(10);
 	
 	while(ros::ok()){
 		
 		ros::spinOnce();
-		
-		buffer.buf();
 		
 		loop_rate.sleep();
 	}

@@ -1,6 +1,7 @@
 #include "RecognitionController.h"
 
 #include <image_buffer/EvidenceCommand.h>
+#include <recognition_controller/ObjectPosition.h>
 
 #include <cmath>
 
@@ -12,11 +13,10 @@ RecognitionController::RecognitionController(){
     pcPosSub = nh.subscribe("/object_finder/positions", 1, &RecognitionController::pcPosCallback, this);
     pcObjSub = nh.subscribe("/object_identifier/objects", 1, &RecognitionController::pcObjCallback, this);
     ocvSub = nh.subscribe("/ocvrec/data", 1, &RecognitionController::ocvCallback, this);
-    poseSub = nh.subscribe("/posOri/Twist", 1, &RecognitionController::globalPoseCallback, this);
+    poseSub = nh.subscribe("/posori/Twist", 1, &RecognitionController::globalPoseCallback, this);
 
     pcPosPub = nh.advertise<object_finder::Positions>("/object_identifier/positions_in", 1);
-    //TODO: change this after debugging
-    identObjPub = nh.advertise<std_msgs::String>("/recognition_controller/identified_objects", 1);
+    identObjPub = nh.advertise<recognition_controller::ObjectPosition>("/recognition_controller/identified_objects", 1);
     espeakPub = nh.advertise<std_msgs::String>("/espeak/string", 1);
     evidenceCommandPub = nh.advertise<image_buffer::EvidenceCommand>("/recognition_controller/evidence_command", 1);
 
@@ -255,7 +255,13 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
 
     ROS_INFO("identified object: %s %s at position (%f, %f)", color.c_str(), shape.c_str(), newKnownObect.coordinates.x, newKnownObect.coordinates.y);
 
-    //TODO send message for map
+    //send message for map
+    recognition_controller::ObjectPosition mapMsg;
+    mapMsg.name = newKnownObect.color + " " + newKnownObect.shape;
+    mapMsg.position.x = newKnownObect.coordinates.x;
+    mapMsg.position.y = newKnownObect.coordinates.y;
+
+    identObjPub.publish(mapMsg);
 
     //send message to espeak
     std_msgs::String espeakMsg;
@@ -267,7 +273,9 @@ void RecognitionController::decideOnObject(std::list<unknown_object>::iterator o
     command.header = std_msgs::Header();
     command.header.stamp = timestamp;
     command.object_name.data = (color + " " + shape).c_str();
-
+    ROS_ERROR("Object ID = %s",command.object_name.data.c_str());
+		evidenceCommandPub.publish(command);
+		ROS_ERROR("after publish");
     return;
 }
 
@@ -293,8 +301,8 @@ bool RecognitionController::findTimePose(ros::Time timestamp, geometry_msgs::Twi
 
 RecognitionController::coordinates2D RecognitionController::computeGlobalPosition(geometry_msgs::Twist globalRobotPose, coordinates2D relativeObjectPosition){
     RecognitionController::coordinates2D globalObjectPosition;
-    globalObjectPosition.x = globalRobotPose.linear.x + std::cos(globalRobotPose.angular.z)*relativeObjectPosition.y + std::sin(globalRobotPose.angular.z)*relativeObjectPosition.x;
-    globalObjectPosition.y = globalRobotPose.linear.y + std::sin(globalRobotPose.angular.z)*relativeObjectPosition.y - std::cos(globalRobotPose.angular.z)*relativeObjectPosition.x;
+    globalObjectPosition.x = globalRobotPose.linear.x - (std::sin(globalRobotPose.angular.z)*relativeObjectPosition.x) - (std::cos(globalRobotPose.angular.z)*relativeObjectPosition.y);
+    globalObjectPosition.y = globalRobotPose.linear.y + (std::cos(globalRobotPose.angular.z)*relativeObjectPosition.x) - (std::sin(globalRobotPose.angular.z)*relativeObjectPosition.y);
     return globalObjectPosition;
 }
 
@@ -324,7 +332,6 @@ void RecognitionController::sendPositionToIdentifyObject(ros::Time timestamp, Re
         positionMsg.object_positions.push_back(objectPosition);
         positionMsg.object_angles.push_back(objectAngle);
 
-        //    identObjPub.publish(positionMsg);
         ROS_INFO("ask for identification of object at (%f, %f)", relativeObjectPosition.x, relativeObjectPosition.y);
         pcPosPub.publish(positionMsg);
         lastPcIdentification = ros::Time::now();

@@ -56,7 +56,7 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::cropTiltedBox(const PointCloud<POINT
 
     pcl::CropBox<POINTTYPE> cb;
     cb.setMin(Eigen::Vector4f(-0.5, -0.5, 0.0, 1.0));
-    cb.setMax(Eigen::Vector4f(0.5, 0.25, 2.0l, 1.0));
+    cb.setMax(Eigen::Vector4f(0.5, 0.25, 1.0, 1.0));
     cb.setRotation(Eigen::Vector3f(theta_x, 0.0, M_PI));
     cb.setInputCloud(cloud);
 
@@ -97,7 +97,7 @@ PointCloud<POINTTYPE>::Ptr CloudPreparator::cropBox(const PointCloud<POINTTYPE>:
 
     pcl::CropBox<POINTTYPE> cb;
     cb.setMin(Eigen::Vector4f(-2.5, 0.01, 0, 1.0));
-    cb.setMax(Eigen::Vector4f(2.5, 0.25, 2.5, 1.0));
+    cb.setMax(Eigen::Vector4f(2.5, 0.25, 1.0, 1.0));
 
     cb.setInputCloud(cloud);
 

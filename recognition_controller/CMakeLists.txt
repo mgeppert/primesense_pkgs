@@ -6,6 +6,8 @@ project(recognition_controller)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  geometry_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -42,11 +44,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  ObjectPosition.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -63,10 +64,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs  # Or other packages containing msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -82,6 +83,7 @@ catkin_package(
 #  LIBRARIES recognition_controller
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -106,6 +108,7 @@ add_executable(recognition_controller_node src/recognition_controller_node.cpp s
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(recognition_controller_node recognition_controller_generate_messages_cpp)
+add_dependencies(recognition_controller_node object_finder_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(recognition_controller_node

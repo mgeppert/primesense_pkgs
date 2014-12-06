@@ -1,6 +1,7 @@
 #include "ObjectFinder.h"
 
 #include <object_finder/Positions.h>
+#include <object_finder/WallPoints.h>
 #include <visualization_msgs/Marker.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -26,6 +27,7 @@ ObjectFinder::ObjectFinder(){
     lowerProjectionPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/lower_projection", 1);
     differencesPub = nh.advertise<sensor_msgs::PointCloud2>("/object_finder/differences", 1);
     markerPub = nh.advertise<visualization_msgs::Marker>("/object_finder/marker", 1);
+    wallPointsPub = nh.advertise<object_finder::WallPoints>("/object_finder/wallpoints", 1);
 
     lowerBox = pcl::CropBox<POINTTYPE>();
     lowerBox.setMin(Eigen::Vector4f(-10.0, 0.01, 0.0, 1.0));
@@ -70,14 +72,16 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     pcl::PointCloud<POINTTYPE>::Ptr upperCloud = cropUpperBox(dsCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerCloud = cropLowerBox(dsCloud);
 
-    ROS_INFO("#points: upper: %lu, lower: %lu", upperCloud->points.size(), lowerCloud->points.size());
+//    ROS_INFO("#points: upper: %lu, lower: %lu", upperCloud->points.size(), lowerCloud->points.size());
+
+    sendWallPoints(upperCloud, currentCloudTimeStamp);
 
     pcl::PointCloud<POINTTYPE>::Ptr upperProjection = projectToZeroPlane(upperCloud);
     pcl::PointCloud<POINTTYPE>::Ptr lowerProjection = projectToZeroPlane(lowerCloud);
 
-    sensor_msgs::PointCloud2 upperProjectionMsg;
-    pcl::toROSMsg(*upperProjection, upperProjectionMsg);
-    upperProjectionPub.publish(upperProjectionMsg);
+//    sensor_msgs::PointCloud2 upperProjectionMsg;
+//    pcl::toROSMsg(*upperProjection, upperProjectionMsg);
+//    upperProjectionPub.publish(upperProjectionMsg);
 
     sensor_msgs::PointCloud2 lowerProjectionMsg;
     pcl::toROSMsg(*lowerProjection, lowerProjectionMsg);
@@ -86,10 +90,10 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
     upperProjection = cropTriangleBox(upperProjection);
     lowerProjection = cropTriangleBox(lowerProjection);
 
-    ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
+//    ROS_INFO("#points: upperProjection: %lu, lowerProjection: %lu", upperProjection->points.size(), lowerProjection->points.size());
 
     pcl::PointCloud<POINTTYPE>::Ptr differenceCloud = getDifference(upperProjection, lowerProjection);
-    ROS_INFO("#points in differenceCloud: %lu", differenceCloud->points.size());
+//    ROS_INFO("#points in differenceCloud: %lu", differenceCloud->points.size());
 
     sensor_msgs::PointCloud2 differenceCloudMsg;
     pcl::toROSMsg(*differenceCloud, differenceCloudMsg);
@@ -123,7 +127,7 @@ void ObjectFinder::findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::downSample(const pcl::PointCloud<POINTTYPE>::Ptr &pc){
 
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
-    grid.setLeafSize(0.002, 0.002, 0.002);
+    grid.setLeafSize(0.004, 0.004, 0.004);
     grid.setInputCloud(pc);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
@@ -205,7 +209,7 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<POINTTYPE> ec;
     ec.setClusterTolerance (0.02); // 2cm
-    ec.setMinClusterSize (75);
+    ec.setMinClusterSize (75); //might have to be adjusted since the resolution of the voxel grid changed
     ec.setMaxClusterSize (5000);
     ec.setSearchMethod (kdTree);
     ec.setInputCloud (pc);
@@ -213,12 +217,12 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
 
     std::vector<ObjectFinder::objectPose> objectPoses(0);
 
-    ROS_INFO("%lu clusters detected", cluster_indices.size());
+//    ROS_INFO("%lu clusters detected", cluster_indices.size());
 
     for(std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(), end = cluster_indices.end(); it != end; it++){
 
-        ROS_INFO("size of original cloud: %lu", pc->points.size());
-        ROS_INFO("indices: %lu", it->indices.size());
+//        ROS_INFO("size of original cloud: %lu", pc->points.size());
+//        ROS_INFO("indices: %lu", it->indices.size());
         //extract object from original cloud
         pcl::PointCloud<POINTTYPE>::Ptr objectCloud(new pcl::PointCloud<POINTTYPE>);
 
@@ -229,7 +233,7 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
         extract.setIndices(inds);
         extract.filter(*objectCloud);
 
-        ROS_INFO("size of objectCloud: %lu", objectCloud->points.size());
+//        ROS_INFO("size of objectCloud: %lu", objectCloud->points.size());
 
         Eigen::Vector4d massCentroid;
         pcl::compute3DCentroid(*objectCloud, massCentroid);
@@ -245,7 +249,7 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
         grid.setInputCloud(objectCloud);
         pcl::PointCloud<POINTTYPE>::Ptr dsObject(new pcl::PointCloud<POINTTYPE>);
         grid.filter(*dsObject);
-        ROS_INFO("points after downsampling object: %lu", dsObject->points.size());
+//        ROS_INFO("points after downsampling object: %lu", dsObject->points.size());
 
         Eigen::Vector4d midCentroid;
         pcl::compute3DCentroid(*dsObject, midCentroid);
@@ -258,7 +262,7 @@ std::vector<ObjectFinder::objectPose> ObjectFinder::getObjectPoses(const pcl::Po
         double xVec = centerOfMass.x - midPoint.x;
         double zVec = centerOfMass.z - midPoint.z;
 
-        ROS_INFO("offset: %f, %f", xVec, zVec);
+//        ROS_INFO("offset: %f, %f", xVec, zVec);
 
         //angle of the object in comparison to unit vector -z
         double angle = std::atan2(-zVec, xVec);
@@ -308,6 +312,50 @@ void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
     marker.lifetime = ros::Duration();
 
     markerPub.publish(marker);
+}
+
+void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros::Time timestamp){
+    //cut out box
+    pcl::CropBox<POINTTYPE> box;
+    box.setMin(Eigen::Vector4f(-0.15, 0, 0.1, 1.0));
+    box.setMax(Eigen::Vector4f(0.15, 1, 0.5, 1.0));
+
+    pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
+    box.setInputCloud(pc);
+    box.filter(*boxCloud);
+
+    ROS_INFO("points in 'wall cloud': %lu", boxCloud->points.size());
+    //abort if too few points (likely only noise)
+    if(boxCloud->points.size() < 20){
+        ROS_INFO("not enough points - abort");
+        return;
+    }
+
+    //sample down
+    pcl::ApproximateVoxelGrid<POINTTYPE> grid;
+    grid.setLeafSize(0.01, 100, 0.01);
+    grid.setInputCloud(boxCloud);
+
+    pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
+    grid.filter(*dsCloud);
+
+    sensor_msgs::PointCloud2 upperProjectionMsg;
+    pcl::toROSMsg(*dsCloud, upperProjectionMsg);
+    upperProjectionPub.publish(upperProjectionMsg);
+
+    //create message
+    object_finder::WallPoints msg;
+    msg.header.stamp = timestamp;
+    msg.points.resize(dsCloud->points.size());
+
+    for(size_t i = 0; i < dsCloud->points.size(); i++){
+        msg.points[i].x = dsCloud->points[i].x;
+        msg.points[i].y = dsCloud->points[i].z;
+        msg.points[i].z = 0;
+    }
+
+    wallPointsPub.publish(msg);
+    return;
 }
 
 } //namespace primesense_pkgs

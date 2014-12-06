@@ -14,21 +14,21 @@ ImageBuffer::ImageBuffer(){
     return;
 }
 
-void ImageBuffer::buf(){
-    if(bufferList.size() > 0 && 0.1 < computeTimeDiff(bufferList.front().header.stamp, lastImageMsg.header.stamp)){
+void ImageBuffer::imageCallback(const sensor_msgs::Image::ConstPtr &msg){
+    lastImageMsg = *msg;
+    // ROS_INFO("New Image");
+    // ROS_INFO("Time diff to HEAD = %f",computeTimeDiff(bufferList.front().header.stamp, lastImageMsg.header.stamp));
+     if(bufferList.size()==0 || (bufferList.size() > 0 && 0.0 < computeTimeDiff(bufferList.front().header.stamp, lastImageMsg.header.stamp))){
         //add new image to buffer
         bufferList.push_front(lastImageMsg);
-
+        // ROS_INFO("Size of bufferList= %lu", bufferList.size());
+        // ROS_INFO("Image TimeStamp = %d", lastImageMsg.header.stamp.sec );
         //remove too old messages from buffer
         while(bufferList.size() > 0 && computeTimeDiff(bufferList.back().header.stamp, ros::Time::now()) > IMAGE_BUFFER_TIME_S){
             bufferList.pop_back();
         }
+        // ROS_INFO("Size of bufferList= %lu", bufferList.size());
     }
-    return;
-}
-
-void ImageBuffer::imageCallback(const sensor_msgs::Image::ConstPtr &msg){
-    lastImageMsg = *msg;
     return;
 }
 
@@ -39,27 +39,45 @@ void ImageBuffer::evidenceCommandCallback(const image_buffer::EvidenceCommand::C
     evidence.object_id = msg->object_name.data;
 
     //find best picture
-    double smallestDiff = 100;
+    if (bufferList.empty()) {
+    	// ROS_INFO("BL Empty");
+			evidencePub.publish(evidence);
+			return;
+		}
+    
+    double smallestDiff = 100.0; //10000000000000.0;
     std::list<sensor_msgs::Image>::iterator bestIt;
-    for(std::list<sensor_msgs::Image>::iterator it = bufferList.begin(), end = bufferList.end(); it != end; it++){
+    // ROS_INFO("2 Size of bufferList= %lu", bufferList.size());
+    bestIt = bufferList.end();
+    for(std::list<sensor_msgs::Image>::iterator it = bufferList.begin(); it != bufferList.end(); ++it){
         double currDiff = computeTimeDiff(it->header.stamp, msg->header.stamp);
         if(currDiff < smallestDiff){
             smallestDiff = currDiff;
             bestIt = it;
+            // ROS_INFO("BestIt");
         }
-        //else break??
+        else {
+        	//break;
+        }
     }
-
-    evidence.image_evidence = *bestIt;
-
-    evidencePub.publish(evidence);
+    // ROS_INFO("Should Publish now");
+    
+    if(bestIt != bufferList.end()){
+    	evidence.image_evidence = *bestIt;
+    	// ROS_INFO("Publishing");
+    	evidencePub.publish(evidence);
+    }
+    
     return;
 }
 
 double ImageBuffer::computeTimeDiff(const ros::Time &t1, const ros::Time &t2){
-    int nSecDiff = std::abs(t1.nsec - t2.nsec);
-    int secDiff = t1.sec - t2.sec;
-    double diff = (double) secDiff + (((double) nSecDiff) / 1e-9);
+    int nSecDiff = abs(t1.nsec - t2.nsec);
+    int secDiff = abs(t1.sec - t2.sec);
+    // ROS_INFO("SEC t1=%d , t2=%d, DIFF=%d and absDIFF=%d", t1.sec, t2.sec,(t1.sec - t2.sec), secDiff);
+    // ROS_INFO("nSEC nt1=%d , nt2=%d, nDIFF=%d and nabsDIFF=%d", t1.nsec, t2.nsec,(t1.nsec - t2.nsec), nSecDiff);
+    double diff = (double) secDiff + (((double) nSecDiff) * (1e-9));
+    // ROS_INFO("Total DIFF=%f", diff);
 
     return diff;
 }
