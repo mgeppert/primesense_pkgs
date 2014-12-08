@@ -357,7 +357,7 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
     //cut out box
     pcl::CropBox<POINTTYPE> box;
     box.setMin(Eigen::Vector4f(-0.15, 0, 0.1, 1.0));
-    box.setMax(Eigen::Vector4f(0.15, 1, 0.75, 1.0));
+    box.setMax(Eigen::Vector4f(0.15, 1, 0.5, 1.0));
 
     pcl::PointCloud<POINTTYPE>::Ptr boxCloud(new pcl::PointCloud<POINTTYPE>);
     box.setInputCloud(pc);
