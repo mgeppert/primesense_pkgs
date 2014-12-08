@@ -109,7 +109,7 @@ bool RecognitionController::positionTooOld(const RecognitionController::pose &po
 double RecognitionController::computeTimeDiff(const ros::Time &t1, const ros::Time &t2){
     int nSecDiff = std::abs(t1.nsec - t2.nsec);
     int secDiff = t1.sec - t2.sec;
-    double diff = (double) secDiff + (((double) nSecDiff) / 1e-9);
+    double diff = (double) secDiff + (((double) nSecDiff) * 1e-9);
 
     return diff;
 }
