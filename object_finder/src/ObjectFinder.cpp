@@ -12,6 +12,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/segment_differences.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 #include <algorithm>
 
@@ -310,6 +311,17 @@ bool ObjectFinder::positionCompare(const ObjectFinder::objectPose& lhs, const Ob
     return lhsDist < rhsDist;
 }
 
+pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::removeOutliers(const pcl::PointCloud<POINTTYPE>::Ptr& cloud){
+    pcl::StatisticalOutlierRemoval<POINTTYPE> sor;
+    sor.setInputCloud (cloud);
+    sor.setMeanK (30);
+    sor.setStddevMulThresh (1.0);
+
+    pcl::PointCloud<POINTTYPE>::Ptr filteredCloud(new pcl::PointCloud<POINTTYPE>);
+    sor.filter (*filteredCloud);
+    return filteredCloud;
+}
+
 void ObjectFinder::sendMarker(pcl::PointXYZ point, int id, ros::Time timestamp){
 
     visualization_msgs::Marker marker;
@@ -358,10 +370,12 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
         return;
     }
 
+    pcl::PointCloud<POINTTYPE>::Ptr cleanedCloud = removeOutliers(boxCloud);
+
     //sample down
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
     grid.setLeafSize(0.01, 100, 0.01);
-    grid.setInputCloud(boxCloud);
+    grid.setInputCloud(cleanedCloud);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
     grid.filter(*dsCloud);
