@@ -370,15 +370,18 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
         return;
     }
 
-    pcl::PointCloud<POINTTYPE>::Ptr cleanedCloud = removeOutliers(boxCloud);
 
     //sample down
     pcl::ApproximateVoxelGrid<POINTTYPE> grid;
     grid.setLeafSize(0.01, 100, 0.01);
-    grid.setInputCloud(cleanedCloud);
+    grid.setInputCloud(boxCloud);
 
     pcl::PointCloud<POINTTYPE>::Ptr dsCloud(new pcl::PointCloud<POINTTYPE>);
     grid.filter(*dsCloud);
+
+    pcl::PointCloud<POINTTYPE>::Ptr cleanedCloud = removeOutliers(dsCloud);
+    dsCloud = cleanedCloud;
+
 
 //    sensor_msgs::PointCloud2 upperProjectionMsg;
 //    pcl::toROSMsg(*dsCloud, upperProjectionMsg);
