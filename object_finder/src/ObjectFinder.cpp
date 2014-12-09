@@ -314,7 +314,7 @@ bool ObjectFinder::positionCompare(const ObjectFinder::objectPose& lhs, const Ob
 pcl::PointCloud<POINTTYPE>::Ptr ObjectFinder::removeOutliers(const pcl::PointCloud<POINTTYPE>::Ptr& cloud){
     pcl::StatisticalOutlierRemoval<POINTTYPE> sor;
     sor.setInputCloud (cloud);
-    sor.setMeanK (30);
+    sor.setMeanK (20);
     sor.setStddevMulThresh (1.0);
 
     pcl::PointCloud<POINTTYPE>::Ptr filteredCloud(new pcl::PointCloud<POINTTYPE>);
@@ -365,7 +365,7 @@ void ObjectFinder::sendWallPoints(const pcl::PointCloud<POINTTYPE>::Ptr &pc, ros
 
     ROS_INFO("points in 'wall cloud': %lu", boxCloud->points.size());
     //abort if too few points (likely only noise)
-    if(boxCloud->points.size() < 20){
+    if(boxCloud->points.size() < 50){
         ROS_INFO("not enough points - abort");
         return;
     }
