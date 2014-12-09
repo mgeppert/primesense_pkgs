@@ -16,16 +16,16 @@ namespace primesense_pkgs{
 ObjectIdentifier::ObjectIdentifier(){
 
     ros::NodeHandle nh;
-    cloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, "/cloud_preparation/prepared_cloud", 1);
+    cloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, "/camera/depth_registered/points", 1);
     cloudSub->registerCallback(&ObjectIdentifier::cloudCallback, this);
     positionSub = new message_filters::Subscriber<object_finder::Positions>(nh, "/object_identifier/positions_in", 1);
     positionSub->registerCallback(&ObjectIdentifier::positionCallback, this);
-    synchronizer = new message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, object_finder::Positions>(*cloudSub, *positionSub, 1000);
+    synchronizer = new message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, object_finder::Positions>(*cloudSub, *positionSub, 100);
     synchronizer->registerCallback(&ObjectIdentifier::cloudPositionCallback, this);
 
     objectPub = nh.advertise<object_identifier::Objects>("/object_identifier/objects", 1);
     debugPub = nh.advertise<sensor_msgs::PointCloud2>("/object_identifier/debug", 1);
-    speakerPub = nh.advertise<std_msgs::String>("/espeak/string", 10);
+//    speakerPub = nh.advertise<std_msgs::String>("/espeak/string", 10);
     currentObjectsTimestamp = ros::Time();
 
 //    inputCloud = pcl::PointCloud<POINTTYPE>::Ptr(new pcl::PointCloud<POINTTYPE>);
@@ -111,9 +111,35 @@ void ObjectIdentifier::cloudPositionCallback(const sensor_msgs::PointCloud2::Con
         objectRotations[i] = posMsg->object_angles[i];
     }
 
-    identifyObjects(objectPositions, objectRotations, inputCloud);
+    pcl::PointCloud<POINTTYPE>::Ptr adaptedCloud = adaptViewPoint(inputCloud);
+    identifyObjects(objectPositions, objectRotations, adaptedCloud);
 
     return;
+}
+
+pcl::PointCloud<POINTTYPE>::Ptr ObjectIdentifier::adaptViewPoint(const pcl::PointCloud<POINTTYPE>::Ptr &cloud){
+
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+
+    //mirror cloud at x-z plane to get positive y values
+    transform(1, 1) = -1;
+
+    double height = 0.0;
+    ros::param::getCached("/calibration/height", height);
+    transform.translation() << 0.0, height, 0.0;
+    double theta_x = 0.0;
+    ros::param::getCached("/calibration/x_angle", theta_x);
+
+    // rotate tetha radians arround X axis
+    transform.rotate (Eigen::AngleAxisf (theta_x, Eigen::Vector3f::UnitX()));
+
+    ROS_INFO("rotate by %f rads around x-axis", theta_x);
+
+    // Executing the transformation
+    pcl::PointCloud<POINTTYPE>::Ptr transformed_cloud (new pcl::PointCloud<POINTTYPE>());
+    pcl::transformPointCloud (*cloud, *transformed_cloud, transform);
+
+    return transformed_cloud;
 }
 
 std::vector<pcl::PointCloud<POINTTYPE>::Ptr> ObjectIdentifier::extractObjectClouds(const std::vector<pcl::PointXYZ> &objectPositions, const std::vector<double> &objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud){

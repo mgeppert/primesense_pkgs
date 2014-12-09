@@ -25,7 +25,7 @@ public:
 private:
     ros::Publisher objectPub;
     ros::Publisher debugPub;
-    ros::Publisher speakerPub;
+//    ros::Publisher speakerPub;
     ros::Time currentObjectsTimestamp;
 
     message_filters::Subscriber<sensor_msgs::PointCloud2> *cloudSub;
@@ -39,7 +39,7 @@ private:
 //    std::vector<double> objectRotations;
 //    std::vector<pcl::PointCloud<POINTTYPE>::Ptr> objectClouds;
 
-
+    pcl::PointCloud<POINTTYPE>::Ptr adaptViewPoint(const pcl::PointCloud<POINTTYPE>::Ptr& cloud);
     void identifyObjects(std::vector<pcl::PointXYZ> objectPositions, std::vector<double> objectRotations, const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud);
     void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void positionCallback(const object_finder::Positions::ConstPtr &msg);

@@ -43,6 +43,7 @@ private:
         double angle;
     };
 
+    pcl::PointCloud<POINTTYPE>::Ptr adaptViewPoint(const pcl::PointCloud<POINTTYPE>::Ptr& cloud);
     void findObjects(const pcl::PointCloud<POINTTYPE>::Ptr &inputCloud, ros::Time currentCloudTimeStamp);
     pcl::PointCloud<POINTTYPE>::Ptr downSample(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
     pcl::PointCloud<POINTTYPE>::Ptr cropUpperBox(const pcl::PointCloud<POINTTYPE>::Ptr& pc);
